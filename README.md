@@ -95,3 +95,7 @@ We welcome contributions to Rift at all levels of the stack, for example:
 See our [contribution guide](/CONTRIBUTORS.md) for details and guidelines.
 
 Programming is evolving. Join the [community](https://discord.gg/wa5sgWMfqv), contribute to our roadmap, and help shape the future of software.
+
+## Feedback
+
+We'd love to hear your feedback on Rift! Share your thoughts with us [here](https://docs.google.com/forms/d/e/1FAIpQLSd6YXKYqsXI720Q2ZrxjloCfMrO_1MjF7O6ZkvdEMZZqpbmmw/viewform).

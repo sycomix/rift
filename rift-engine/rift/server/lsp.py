@@ -24,7 +24,7 @@ class LspLogHandler(logging.Handler):
     def __init__(self, server: "LspServer"):
         super().__init__()
         self.server = server
-        self.tasks: set[asyncio.Task] = set()
+        self.tasks: set[asyncio.Task] = set()        
 
     def emit(self, record: logging.LogRecord) -> None:
         if self.server.status != RpcServerStatus.running:
