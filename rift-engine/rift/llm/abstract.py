@@ -77,7 +77,8 @@ class AbstractChatCompletionProvider(ABC):
         document: Optional[str],
         messages: List[Message],
         message: str,
-        cursor_offset: Optional[int] = None,
+        cursor_offset_start: Optional[int] = None,
+        cursor_offset_end: Optional[int] = None,
         documents: Optional[List[lsp.Document]] = None,
     ) -> ChatResult:
         """

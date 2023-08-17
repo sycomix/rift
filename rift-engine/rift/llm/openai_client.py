@@ -162,7 +162,7 @@ def format_visible_files(documents: Optional[List[lsp.Document]] = None) -> str:
 
 
 def create_system_message_chat(
-    document: str, documents: Optional[List[lsp.Document]] = None
+        before_cursor: str, region: str, after_cursor: str, documents: Optional[List[lsp.Document]] = None,
 ) -> Message:
     """
     Create system message wiht up to MAX_SYSTEM_MESSAGE_SIZE tokens
@@ -171,11 +171,15 @@ def create_system_message_chat(
     message = f"""
 You are an expert software engineer and world-class systems architect with deep technical and design knowledge. Answer the user's questions about the code as helpfully as possible, quoting verbatim from the visible files if possible to support your claims.
 
-Current file:
-```
-{document}
-```"""
-    # logger.info(f"[create_system_message_chat] {documents=}")
+The current file is split into a prefix, region, and suffix. Unless if the region is empty, assume that the user's question is about the region.
+
+==== PREFIX ====
+{before_cursor}
+==== REGION ====
+{region}
+==== SUFFIX ====
+{after_cursor}
+"""
     if documents:
         message += "Additional files:\n"
         for doc in documents:
@@ -200,7 +204,7 @@ def truncate_around_region(
         after_cursor: str = document[region_end:]
         tokens_before_cursor: List[int] = ENCODER.encode(before_cursor)
         tokens_after_cursor: List[int] = ENCODER.encode(after_cursor)
-        region_tokens: List[int] = ENCODE.encode(region)
+        region_tokens: List[int] = ENCODER.encode(region)
         (tokens_before_cursor, tokens_after_cursor) = split_lists(
             tokens_before_cursor, tokens_after_cursor, max_size
         )
@@ -220,7 +224,7 @@ def create_system_message_chat_truncated(
     max_size: int,
     cursor_offset_start: Optional[int] = None,
     cursor_offset_end: Optional[int] = None,
-    document_list: Optional[List[lsp.Document]] = None,
+    documents: Optional[List[lsp.Document]] = None,
     current_file_weight: float = 0.5,
     encoder = ENCODER,
 ) -> Message:
@@ -228,29 +232,50 @@ def create_system_message_chat_truncated(
     Create system message with up to max_size tokens
     """
     # logging.getLogger().info(f"{max_size=}")
-    hardcoded_message = create_system_message_chat("")
+    hardcoded_message = create_system_message_chat("", "", "")
     hardcoded_message_size = message_size(hardcoded_message)
     max_size = max_size - hardcoded_message_size
 
-    if document_list:
-        # truncate the main document as necessary
-        max_document_size = int(current_file_weight * max_size)
-    else:
-        max_document_size = max_size
+    # if document_list:
+    #     # truncate the main document as necessary
+    #     max_document_size = int(current_file_weight * max_size)
+    # else:
+    #     max_document_size = max_size
 
-    document_tokens = encoder.encode(document)
-    if len(document_tokens) > max_document_size:
-        document_tokens: List[int] = truncate_around_region(
-            document, document_tokens, cursor_offset_start, cursor_offset_end, max_document_size
+    # rescale `max_size_document` if we need to make room for the other documents
+    max_size_document = int(max_size * (current_file_weight if documents else 1.0))
+
+    before_cursor = document[:cursor_offset_start]
+    region = document[cursor_offset_start:cursor_offset_end]
+    after_cursor = document[cursor_offset_end:]
+
+    # TODO: handle case when region is too large
+    # calculate truncation for the ur-document
+    if get_num_tokens(document) > max_size_document:
+        tokens_before_cursor = ENCODER.encode(before_cursor)
+        tokens_after_cursor = ENCODER.encode(after_cursor)
+        (tokens_before_cursor, tokens_after_cursor) = split_lists(
+            tokens_before_cursor, tokens_after_cursor, max_size_document - len(ENCODER.encode(region))
         )
-    truncated_document = encoder.decode(document_tokens)
+        logger.debug(
+            f"Truncating document to ({len(tokens_before_cursor)}, {len(tokens_after_cursor)}) tokens around cursor"
+        )
+        before_cursor = ENCODER.decode(tokens_before_cursor)
+        after_cursor = ENCODER.decode(tokens_after_cursor)
+
+    # document_tokens = encoder.encode(document)
+    # if len(document_tokens) > max_size_document:
+    #     document_tokens: List[int] = truncate_around_region(
+    #         document, document_tokens, cursor_offset_start, cursor_offset_end, max_size_document
+    #     )
+    # truncated_document = encoder.decode(document_tokens)
 
     truncated_document_list = []
-    logger.info(f"document list = {document_list}")
-    if document_list:
-        max_document_list_size = ((1.0 - current_file_weight) * max_size) // len(document_list)
+    logger.info(f"document list = {documents}")
+    if documents:
+        max_document_list_size = ((1.0 - current_file_weight) * max_size) // len(documents)
         max_document_list_size = int(max_document_list_size)
-        for doc in document_list:
+        for doc in documents:
             # TODO: Need a check for using up our limit
             document_contents = doc.document.text
             # logger.info(f"{document_contents=}")
@@ -265,7 +290,7 @@ def create_system_message_chat_truncated(
             logger.info("created new doc")
             truncated_document_list.append(new_doc)
 
-    return create_system_message_chat(truncated_document, truncated_document_list)
+    return create_system_message_chat(before_cursor, region, after_cursor, truncated_document_list)
 
 
 def truncate_messages(
@@ -471,7 +496,8 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         document: Optional[str],
         messages: List[Message],
         message: str,
-        cursor_offset: Optional[int] = None,
+        cursor_offset_start: Optional[int] = None,
+        cursor_offset_end: Optional[int] = None,
         documents: Optional[List[lsp.Document]] = None,
     ) -> ChatResult:
         chatstream = TextStream()
@@ -487,7 +513,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
 
         # logger.info(f"{documents=}")
         system_message = create_system_message_chat_truncated(
-            document or "", max_system_msg_size, cursor_offset, cursor_offset, documents
+            document or "", max_system_msg_size, cursor_offset_start, cursor_offset_end, documents
         )
 
         messages = [system_message] + non_system_messages
@@ -603,12 +629,13 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         region = document[cursor_offset_start:cursor_offset_end]
         after_cursor = document[cursor_offset_end:]
 
+        # TODO: handle case when region is too large
         # calculate truncation for the ur-document
         if get_num_tokens(document) > max_size_document:
             tokens_before_cursor = ENCODER.encode(before_cursor)
             tokens_after_cursor = ENCODER.encode(after_cursor)
             (tokens_before_cursor, tokens_after_cursor) = split_lists(
-                tokens_before_cursor, tokens_after_cursor, max_size_document
+                tokens_before_cursor, tokens_after_cursor, max_size_document - len(ENCODER.encode(region))
             )
             logger.debug(
                 f"Truncating document to ({len(tokens_before_cursor)}, {len(tokens_after_cursor)}) tokens around cursor"

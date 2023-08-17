@@ -94,13 +94,17 @@ class RiftChatAgent(Agent):
             doc_text = self.state.document.text if self.state.document is not None else ""
 
             logger.info("running chat")
-            stream = await self.state.model.run_chat(
-                doc_text,
-                self.state.messages,
-                user_response,
-                cursor_offset=None,
-                documents=documents,
-            )
+            with lsp.setdoc(self.state.document):
+                cursor_offset_start = self.state.document.position_to_offset(self.state.params.selection.first) if self.state.params.selection is not None else None
+                cursor_offset_end = self.state.document.position_to_offset(self.state.params.selection.second) if self.state.params.selection is not None else None
+                stream = await self.state.model.run_chat(
+                    doc_text,
+                    self.state.messages,
+                    user_response,
+                    cursor_offset_start,
+                    cursor_offset_end,
+                    documents=documents,
+                )
             async for delta in stream.text:
                 response += delta
                 # logger.info(f"{delta=}")
