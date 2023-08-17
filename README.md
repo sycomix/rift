@@ -34,6 +34,7 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
   - Both Rift Chat and Code Edit see a window around your cursor or selection in the currently active editor window. To tell them about other resources in your codebase, mention them with `@`.
   - Code Edit 
 - You can `@`-mention files and directories to tell your agents about other parts of the codebase.
+  - `@`-mentioning files currently only works with Aider if those files are tracked by git.
 - Currently, Rift works best when the active workspace directory is the same as the root directory of the `git` project.
 - Command+Shift+P -> "Rift: Start Server" restarts the server if it has been auto-installed.
 
