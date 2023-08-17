@@ -14,7 +14,7 @@ from rift.llm.create import ModelConfig, parse_type_name_path
 from rift.lsp import LspServer as BaseLspServer
 from rift.lsp import rpc_method
 from rift.rpc import RpcServerStatus
-from rift.util.ofdict import ofdict
+from rift.util.ofdict import ofdict, todict
 import pydantic
 
 logger = logging.getLogger(__name__)
@@ -268,14 +268,18 @@ class LspServer(BaseLspServer):
         logger.info(old_agent.state.params)
         agent_type = old_agent.agent_type
         agent_id = old_agent.agent_id
+        params_dict = todict(old_params)
+        params_dict["agent_id"] = agent_id
         return await self.on_create(
-            AgentParams(
-                agent_type=agent_type,
-                agent_id=agent_id,
-                textDocument=old_params.textDocument,
-                selection=old_params.selection,
-                workspaceFolderPath=old_params.workspaceFolderPath,
-            )
+            params_dict
+            # dict(
+            #     agent_type=agent_type,
+            #     agent_id=agent_id,
+            #     textDocument=old_params.textDocument,
+            #     selection=old_params.selection,
+            #     workspaceFolderPath=old_params.workspaceFolderPath,
+                
+            # )
         )
 
     @rpc_method("morph/create_agent")
