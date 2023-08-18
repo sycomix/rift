@@ -7,7 +7,7 @@ allow-direct-references = true
 
 [project]
 name = "pyrift"
-version = "2.0.9"
+version = "2.0.10"
 description = ''
 readme = "README.md"
 requires-python = ">=3.9"
@@ -28,9 +28,9 @@ dependencies = [
   "transformers",
   "diff_match_patch",
   "art",
-  "smol_dev @ git+https://www.github.com/jesse-michael-han/smol_dev",
   "gpt-engineer @ git+https://www.github.com/morph-labs/gpt-engineer",
-  "aider-chat @ git+https://github.com/morph-labs/aider"
+  "aider-chat @ git+https://github.com/morph-labs/aider",
+  "smol_dev @ git+https://github.com/morph-labs/smol_dev"
 ]
 
 [project.optional-dependencies]
@@ -40,7 +40,7 @@ hf = [
 ]
 
 smol_dev = [
-  "smol_dev @ git+https://www.github.com/jesse-michael-han/smol_dev",
+  "smol_dev @ git+https://www.github.com/morph-labs/smol_dev",
 ]
 
 gpt-engineer = [
