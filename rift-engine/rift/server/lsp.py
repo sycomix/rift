@@ -286,8 +286,12 @@ class LspServer(BaseLspServer):
     async def on_create(self, params_as_dict: Any):
         try:
             agent_type = params_as_dict["agent_type"]
-            agent_id = str(uuid.uuid4())[:8]
-            params_as_dict["agent_id"] = agent_id
+            
+            if "agent_id" not in params_as_dict:
+                agent_id = str(uuid.uuid4())[:8]
+                params_as_dict["agent_id"] = agent_id
+            else:
+                agent_id = params_as_dict["agent_id"]
 
             logger = logging.getLogger(__name__)
             agent_cls = AGENT_REGISTRY[agent_type]

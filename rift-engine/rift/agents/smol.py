@@ -117,13 +117,7 @@ class SmolAgent(ThirdPartyAgent):
         except Exception as e:
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
-    async def run(self) -> AgentRunResult:
-        settings = await self.server.get_workspace_configuration(section="rift")
-        settings = settings[0]
-
-        if "openaiKey" in settings and settings["openaiKey"]:
-            os.environ["OPENAI_API_KEY"] = settings["openaiKey"]
-        
+    async def run(self) -> AgentRunResult:        
         await self.send_progress()
         response_stream = TextStream()
         self._response_buffer = ""

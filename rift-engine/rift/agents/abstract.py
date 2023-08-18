@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 from abc import ABC
@@ -333,6 +334,14 @@ class ThirdPartyAgent(Agent):
 
             await self.send_chat_update(self.third_party_warning_message, prepend=True)
 
+            # refresh configuration and set openaiKey if present
+            settings = await self.server.get_workspace_configuration(section="rift")
+            settings = settings[0]
+
+            if "openaiKey" in settings and settings["openaiKey"]:
+                os.environ["OPENAI_API_KEY"] = settings["openaiKey"]
+
+            # run `self.run`
             result_t = asyncio.create_task(self.task.run())
             result_t.add_done_callback(
                 lambda fut: asyncio.run_coroutine_threadsafe(

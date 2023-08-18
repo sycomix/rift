@@ -342,13 +342,7 @@ class EngineerAgent(ThirdPartyAgent):
 
         return obj
 
-    async def run(self) -> AgentRunResult:  # main entry point
-        settings = await self.server.get_workspace_configuration(section="rift")
-        settings = settings[0]
-
-        if "openaiKey" in settings and settings["openaiKey"]:
-            os.environ["OPENAI_API_KEY"] = settings["openaiKey"]
-            
+    async def run(self) -> AgentRunResult:  # main entry point            
         self.RESPONSE = ""
         self.response_stream = TextStream()
         await self.send_progress()
