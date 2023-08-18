@@ -157,7 +157,7 @@ def format_visible_files(documents: Optional[List[lsp.Document]] = None) -> str:
     message = ""
     message += "Visible files:\n"
     for doc in documents:
-        message += f"```\n{doc.document.text}\n```\n"
+        message += f"{doc.uri}```\n{doc.document.text}\n```\n"
     return message
 
 
@@ -183,7 +183,7 @@ The current file is split into a prefix, region, and suffix. Unless if the regio
     if documents:
         message += "Additional files:\n"
         for doc in documents:
-            message += f"```\n{doc.document.text}\n```\n"
+            message += f"{doc.uri}```\n{doc.document.text}\n```\n"
     message += """Answer the user's question."""
     # logger.info(f"{message=}")
     return Message.system(message)
@@ -409,6 +409,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         payload = params.dict(exclude_none=True)
         payload["stream"] = True
         path = self._make_path(endpoint)
+        logger.info(f"{payload=}")
         async with self.session.post(path, params=self.url_query, json=payload) as resp:
             if not resp.ok:
                 await self.handle_error(resp)
