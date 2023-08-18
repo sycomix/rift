@@ -218,7 +218,8 @@ class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvide
         document: str,
         messages: List[Message],
         message: str,
-        cursor_offset: Optional[int] = None,
+        cursor_offset_start: Optional[int] = None,
+        cursor_offset_end: Optional[int] = None,            
         documents: Optional[List[Any]] = None,
     ) -> ChatResult:
         logger.debug("run_chat called")
@@ -233,7 +234,7 @@ class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvide
         max_system_msg_size = calc_max_system_message_size(non_system_messages_size, max_system_message_size=768, max_context_size=2048, max_len_sampled_completion=256)
         # logger.info(f"{max_system_msg_size=}")
         system_message = create_system_message_chat_truncated(
-            document or "", max_system_msg_size, cursor_offset, cursor_offset, documents, encoder=self.ENCODER
+            document or "", max_system_msg_size, cursor_offset_start, cursor_offset_end, documents, encoder=self.ENCODER
         )
         # logger.info(f"{system_message=}")
         messages = (
