@@ -463,7 +463,7 @@ export class MorphLanguageClient
 
         const agentParams: AgentParams = {
             agent_type: agent_type,
-            agent_id: "", // agent ID has not been assigned yet
+            agent_id: null,
             selection: editor?.selection ?? null,
             position,
             textDocument,

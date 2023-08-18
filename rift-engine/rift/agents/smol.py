@@ -117,7 +117,7 @@ class SmolAgent(ThirdPartyAgent):
         except Exception as e:
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
-    async def run(self) -> AgentRunResult:        
+    async def run(self) -> AgentRunResult:
         await self.send_progress()
         response_stream = TextStream()
         self._response_buffer = ""

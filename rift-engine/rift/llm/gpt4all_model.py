@@ -4,7 +4,7 @@ import logging
 import threading
 from functools import cache
 from pathlib import Path
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 from gpt4all import GPT4All
 from gpt4all.pyllmodel import (
@@ -23,14 +23,14 @@ from rift.llm.abstract import (
     ChatResult,
     InsertCodeResult,
 )
-from rift.llm.openai_types import Message
-from rift.util.TextStream import TextStream
 from rift.llm.openai_client import (
-    truncate_messages,
+    calc_max_system_message_size,
     create_system_message_chat_truncated,
     messages_size,
-    calc_max_system_message_size,
+    truncate_messages,
 )
+from rift.llm.openai_types import Message
+from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +123,7 @@ def generate_stream(self: LLModel, prompt: str, **kwargs) -> TextStream:
     output._feed_task = asyncio.create_task(run_async())
     return output
 
+
 def model_name_to_tokenizer(name: str):
     if name == "ggml-gpt4all-j-v1.3-groovy":
         return transformers.AutoTokenizer.from_pretrained("nomic-ai/gpt4all-j")
@@ -177,14 +178,13 @@ class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvide
         self.name = config.model_name
         self._model_future = None
         self.ENCODER = model_name_to_tokenizer(self.config.model_name)
-        
 
     async def load(self):
         await self._get_model()
 
     @cache
     def get_num_tokens(self, content):
-        return len(self.ENCODER.encode(content))        
+        return len(self.ENCODER.encode(content))
 
     @property
     async def model(self):
@@ -219,7 +219,7 @@ class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvide
         messages: List[Message],
         message: str,
         cursor_offset_start: Optional[int] = None,
-        cursor_offset_end: Optional[int] = None,            
+        cursor_offset_end: Optional[int] = None,
         documents: Optional[List[Any]] = None,
     ) -> ChatResult:
         logger.debug("run_chat called")
@@ -231,10 +231,20 @@ class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvide
             non_system_messages.append(Message.mk(role=msg.role, content=msg.content))
         non_system_messages += [Message.user(content=message)]
         non_system_messages_size = messages_size(non_system_messages)
-        max_system_msg_size = calc_max_system_message_size(non_system_messages_size, max_system_message_size=768, max_context_size=2048, max_len_sampled_completion=256)
+        max_system_msg_size = calc_max_system_message_size(
+            non_system_messages_size,
+            max_system_message_size=768,
+            max_context_size=2048,
+            max_len_sampled_completion=256,
+        )
         # logger.info(f"{max_system_msg_size=}")
         system_message = create_system_message_chat_truncated(
-            document or "", max_system_msg_size, cursor_offset_start, cursor_offset_end, documents, encoder=self.ENCODER
+            document or "",
+            max_system_msg_size,
+            cursor_offset_start,
+            cursor_offset_end,
+            documents,
+            encoder=self.ENCODER,
         )
         # logger.info(f"{system_message=}")
         messages = (
@@ -256,7 +266,9 @@ class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvide
 
         num_old_messages = len(messages)
         # messages = auto_truncate(messages)
-        messages = truncate_messages(messages, max_context_size=2048, max_len_sampled_completion=256)
+        messages = truncate_messages(
+            messages, max_context_size=2048, max_len_sampled_completion=256
+        )
 
         logger.info(f"Truncated {num_old_messages - len(messages)} due to context length overflow.")
 

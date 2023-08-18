@@ -162,7 +162,10 @@ def format_visible_files(documents: Optional[List[lsp.Document]] = None) -> str:
 
 
 def create_system_message_chat(
-        before_cursor: str, region: str, after_cursor: str, documents: Optional[List[lsp.Document]] = None,
+    before_cursor: str,
+    region: str,
+    after_cursor: str,
+    documents: Optional[List[lsp.Document]] = None,
 ) -> Message:
     """
     Create system message wiht up to MAX_SYSTEM_MESSAGE_SIZE tokens
@@ -226,7 +229,7 @@ def create_system_message_chat_truncated(
     cursor_offset_end: Optional[int] = None,
     documents: Optional[List[lsp.Document]] = None,
     current_file_weight: float = 0.5,
-    encoder = ENCODER,
+    encoder=ENCODER,
 ) -> Message:
     """
     Create system message with up to max_size tokens
@@ -255,7 +258,9 @@ def create_system_message_chat_truncated(
         tokens_before_cursor = ENCODER.encode(before_cursor)
         tokens_after_cursor = ENCODER.encode(after_cursor)
         (tokens_before_cursor, tokens_after_cursor) = split_lists(
-            tokens_before_cursor, tokens_after_cursor, max_size_document - len(ENCODER.encode(region))
+            tokens_before_cursor,
+            tokens_after_cursor,
+            max_size_document - len(ENCODER.encode(region)),
         )
         logger.debug(
             f"Truncating document to ({len(tokens_before_cursor)}, {len(tokens_after_cursor)}) tokens around cursor"
@@ -636,7 +641,9 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             tokens_before_cursor = ENCODER.encode(before_cursor)
             tokens_after_cursor = ENCODER.encode(after_cursor)
             (tokens_before_cursor, tokens_after_cursor) = split_lists(
-                tokens_before_cursor, tokens_after_cursor, max_size_document - len(ENCODER.encode(region))
+                tokens_before_cursor,
+                tokens_after_cursor,
+                max_size_document - len(ENCODER.encode(region)),
             )
             logger.debug(
                 f"Truncating document to ({len(tokens_before_cursor)}, {len(tokens_after_cursor)}) tokens around cursor"

@@ -342,7 +342,7 @@ class EngineerAgent(ThirdPartyAgent):
 
         return obj
 
-    async def run(self) -> AgentRunResult:  # main entry point            
+    async def run(self) -> AgentRunResult:  # main entry point
         self.RESPONSE = ""
         self.response_stream = TextStream()
         await self.send_progress()

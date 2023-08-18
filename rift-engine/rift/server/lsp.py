@@ -7,6 +7,8 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+import pydantic
+
 import rift.lsp.types as lsp
 from rift.agents import AGENT_REGISTRY, Agent, AgentParams, AgentRegistryResult
 from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeCompletionProvider
@@ -15,7 +17,6 @@ from rift.lsp import LspServer as BaseLspServer
 from rift.lsp import rpc_method
 from rift.rpc import RpcServerStatus
 from rift.util.ofdict import ofdict, todict
-import pydantic
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class LspLogHandler(logging.Handler):
     def __init__(self, server: "LspServer"):
         super().__init__()
         self.server = server
-        self.tasks: set[asyncio.Task] = set()        
+        self.tasks: set[asyncio.Task] = set()
 
     def emit(self, record: logging.LogRecord) -> None:
         if self.server.status != RpcServerStatus.running:
@@ -41,7 +42,7 @@ class LspLogHandler(logging.Handler):
         if level == 1:
             t = asyncio.create_task(self.server.send_error(self.format(record)))
             self.tasks.add(t)
-            t.add_done_callback(self.tasks.discard) # cute
+            t.add_done_callback(self.tasks.discard)  # cute
         t = asyncio.create_task(
             self.server.notify(
                 "window/logMessage",
@@ -278,7 +279,6 @@ class LspServer(BaseLspServer):
             #     textDocument=old_params.textDocument,
             #     selection=old_params.selection,
             #     workspaceFolderPath=old_params.workspaceFolderPath,
-                
             # )
         )
 
@@ -286,8 +286,8 @@ class LspServer(BaseLspServer):
     async def on_create(self, params_as_dict: Any):
         try:
             agent_type = params_as_dict["agent_type"]
-            
-            if "agent_id" not in params_as_dict:
+
+            if not params_as_dict["agent_id"]:
                 agent_id = str(uuid.uuid4())[:8]
                 params_as_dict["agent_id"] = agent_id
             else:
