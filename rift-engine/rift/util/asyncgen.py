@@ -1,3 +1,4 @@
+import logging
 import asyncio
 import itertools
 import operator
@@ -45,9 +46,15 @@ async def takewhile(predicate: Callable[[A], bool], asg: AsyncIterable[A]):
             break
 
 
-async def map(fn: Callable[[A], B], asg: AsyncIterable[A]) -> AsyncIterable[B]:
+async def map(fn: Callable[[A], B], asg: AsyncIterable[A], error_callback: Optional[Callable[Any, Any]] = None) -> AsyncIterable[B]:
     async for x in asg:
-        yield fn(x)
+        if not error_callback:
+            yield fn(x)
+        else:
+            try:
+                yield fn(x)
+            except Exception as e:
+                error_callback(e)
 
 
 async def tolist(asg):

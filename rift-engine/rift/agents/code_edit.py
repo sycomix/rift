@@ -140,6 +140,7 @@ class CodeEditAgent(Agent):
                         else (self.accepted_diff_text(self.DIFF)),
                         documents=documents,
                     )
+
                     logger.info("started streaming result")
                     response_stream = TextStream()
 
@@ -160,7 +161,7 @@ class CodeEditAgent(Agent):
 
                     async def gather_thoughts():
                         async for delta in edit_code_result.thoughts:
-                            response_stream.feed_data(delta)
+                            response_stream.feed_data(delta)                        
 
                     async def cleanup():
                         response_stream.feed_eof()
@@ -270,6 +271,17 @@ class CodeEditAgent(Agent):
                                 fuel -= 1
 
                     async def generate_code():
+                        # async def watch_event():
+                        #     if edit_code_result.event:                            
+                        #         while True:
+                        #             # logger.info(f"{edit_code_result.event=}")
+                        #             if edit_code_result.event.is_set():
+                        #                 raise Exception(f"[{self.agent_type}] generation failed")
+                        #             else:
+                        #                 await asyncio.sleep(0.5)
+                        #                 continue
+
+                        # asyncio.create_task(watch_event())
                         nonlocal all_deltas
                         # async for substream in edit_code_result.code.asplit("\n"):
                         after = edit_code_result.code
@@ -283,7 +295,7 @@ class CodeEditAgent(Agent):
                                 else:
                                     await send_diff(x)
 
-                        diff_queue_task = asyncio.create_task(_watch_queue())
+                        diff_queue_task = asyncio.create_task(_watch_queue())                        
                         while True:
                             if after.at_eof():
                                 break

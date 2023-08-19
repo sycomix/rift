@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List, Optional
@@ -18,11 +19,14 @@ class EditCodeResult:
     code: TextStream
     plan: Optional[TextStream] = field(default=None)
     thoughts: Optional[TextStream] = field(default=None)
+    event: Optional[asyncio.Event] = None
 
 
 @dataclass
 class ChatResult:
     text: TextStream
+    event: Optional[asyncio.Event] = None
+    
 
 
 class AbstractCodeCompletionProvider(ABC):

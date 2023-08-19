@@ -51,6 +51,9 @@ from tiktoken import get_encoding
 ENCODER = get_encoding("cl100k_base")
 ENCODER_LOCK = Lock()
 
+class MissingKeyError(Exception):
+    ...
+
 
 @dataclass
 class OpenAIError(Exception):
@@ -322,7 +325,7 @@ def truncate_messages(
 
 
 class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCompletionProvider):
-    api_key: SecretStr
+    api_key: Optional[SecretStr] = None
     api_url: str = "https://api.openai.com/v1"
     default_model: Optional[str] = None
 
@@ -407,6 +410,9 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         input_type: Type[I],
         stream_data_type: Type[O],
     ) -> AsyncGenerator[O, None]:
+        if not self.api_key:
+            logger.error("Missing API key")
+            raise MissingKeyError
         if not getattr(params, "stream", True):
             raise ValueError("To not use streaming please use the _post_endpoint method")
         if not isinstance(params, input_type):
@@ -442,6 +448,9 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         input_type: Type[I],
         output_type: Type[O],
     ) -> O:
+        if not self.api_key:
+            logger.error("Missing API key")
+            raise Exception("[OpenAIClient] missing API key")
         if not isinstance(params, input_type):
             raise TypeError(f"expected {input_type}, got {type(params)}")
         if getattr(params, "stream", False):
@@ -535,18 +544,23 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
             asg.map(lambda c: c.text, self.chat_completions(messages, stream=True))
         )
 
+        event = asyncio.Event()
+
         async def worker():
             try:
                 async for delta in stream:
                     chatstream.feed_data(delta)
                 chatstream.feed_eof()
+            except MissingKeyError as e:
+                event.set()
+                raise e
             finally:
                 chatstream.feed_eof()
 
         t = asyncio.create_task(worker())
         chatstream._feed_task = t
         # logger.info("Created chat stream, awaiting results.")
-        return ChatResult(text=chatstream)
+        return ChatResult(text=chatstream, event=event)
 
     async def edit_code(
         self,
@@ -674,8 +688,12 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         )
         # logger.info(f"{messages=}")
 
+        event = asyncio.Event()        
+        def error_callback(e):
+            event.set()
+
         stream = TextStream.from_aiter(
-            asg.map(lambda c: c.text, self.chat_completions(messages, stream=True))
+            asg.map(lambda c: c.text, self.chat_completions(messages, stream=True), error_callback=error_callback)
         )
 
         logger.info("constructed stream")
@@ -706,6 +724,9 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
                 async for delta in after:
                     thoughtstream.feed_data(delta)
                 thoughtstream.feed_eof()
+            except Exception as e:
+                event.set()
+                raise e
             finally:
                 planstream.feed_eof()
                 thoughtstream.feed_eof()
@@ -717,7 +738,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         codestream._feed_task = t
         planstream._feed_task = t
         # logger.info("[edit_code] about to return")
-        return EditCodeResult(thoughts=thoughtstream, code=codestream, plan=planstream)
+        return EditCodeResult(thoughts=thoughtstream, code=codestream, plan=planstream, event=event)
 
     async def insert_code(self, document: str, cursor_offset: int, goal=None) -> InsertCodeResult:
         raise Exception("unreachable code")

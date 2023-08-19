@@ -116,6 +116,9 @@ class RiftChatAgent(Agent):
                 # logger.info(f"{delta=}")
                 async with response_lock:
                     await self.send_progress(ChatProgress(response=assistant_response))
+            if stream.event:
+                if stream.event.is_set():
+                    raise Exception(f"[{self.agent_type}] generation failed")
             await self.send_progress(ChatProgress(response=assistant_response, done_streaming=True))
             logger.info(f"{self} finished streaming response.")
             return assistant_response
