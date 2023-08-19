@@ -85,6 +85,7 @@ class LspServer(ExtraRpc):
         self, uri: lsp.DocumentUri, range: lsp.Range, text: str, version: int = 0
     ):
         assert version is not None, "version must be given, or we get no edit."
+        # logger.info("entering apply range edit")
         textDocument = lsp.TextDocumentIdentifier(uri=uri, version=version)  # [todo] version
         newText = text
         params = lsp.ApplyWorkspaceEditParams(
@@ -102,16 +103,21 @@ class LspServer(ExtraRpc):
                 ]
             )
         )
+        # logger.info(f"applying workspace edit with {params=}")
         return await self.apply_workspace_edit(params)
 
     async def apply_workspace_edit(
         self, params: ApplyWorkspaceEditParams
     ) -> ApplyWorkspaceEditResponse:
+        # logger.info("[apply_workspace_edit] entered")
         if isinstance(params, ApplyWorkspaceEditParams):
+            # logger.info("making request")
             response = await self.request("workspace/applyEdit", params)
             response = ofdict(ApplyWorkspaceEditResponse, response)
+            # logger.info(f"read {response=}")
             return response
         else:
+            logger.info("failed instance check")
             raise TypeError("expected ApplyWorkspaceEditParams or InsertionEdit")
 
     @rpc_method("textDocument/didOpen")

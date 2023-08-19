@@ -85,7 +85,7 @@ class AgentIdParams:
 class LspServer(BaseLspServer):
     active_agents: dict[str, Agent]
     model_config: ModelConfig
-    completions_model: Optional[AbstractCodeCompletionProvider] = None
+    code_edit_model: Optional[AbstractCodeCompletionProvider] = None
     chat_model: Optional[AbstractChatCompletionProvider] = None
 
     def __init__(self, transport):
@@ -176,9 +176,8 @@ class LspServer(BaseLspServer):
             # Adding the TextDocumentItem to the result documents dictionary
             result_documents[doc_item.uri] = doc_item
 
-    @rpc_method("morph/applyWorkspaceEdit")
-    async def apply_workspace_edit(self, params: lsp.ApplyWorkspaceEditParams):
-        return await self.apply_workspace_edit(params)
+    # async def apply_workspace_edit(self, params: lsp.ApplyWorkspaceEditParams):
+    #     return await self.apply_workspace_edit(params)
 
     async def get_config(self):
         """This should be called whenever the user changes the model config settings.
@@ -205,19 +204,19 @@ class LspServer(BaseLspServer):
             raise RuntimeError(f"Invalid settings:\n{settings}\nExpected a list of dictionaries.")
         settings = settings[0]
         config: ModelConfig = ModelConfig.parse_obj(settings)
-        if self.chat_model and self.completions_model and self.model_config == config:
+        if self.chat_model and self.code_edit_model and self.model_config == config:
             logger.debug("config unchanged")
             return
         self.model_config = config
         logger.info(f"{self} recieved model config {config}")
         for k, h in self.active_agents.items():
             asyncio.create_task(h.cancel("config changed"))
-        self.completions_model = config.create_completions()
+        self.code_edit_model = config.create_completions()
         self.chat_model = config.create_chat()
-        logger.info(f"created new models: {self.chat_model=} {self.completions_model=}")
+        logger.info(f"created new models: {self.chat_model=} {self.code_edit_model=}")
 
         self._loading_task = asyncio.gather(
-            self.completions_model.load(),
+            self.code_edit_model.load(),
             self.chat_model.load(),
         )
         try:
@@ -233,20 +232,20 @@ class LspServer(BaseLspServer):
         return parse_type_name_path(self.model_config.chatModel)
 
     def parse_current_completions_config(self) -> Tuple[str, str, str]:
-        return parse_type_name_path(self.model_config.completionsModel)
+        return parse_type_name_path(self.model_config.codeEditModel)
 
     async def send_update(self, msg: str):
         await self.notify("morph/send_update", {"msg": msg})
 
-    async def ensure_completions_model(self):
+    async def ensure_code_edit_model(self):
         try:
-            if self.completions_model is None:
+            if self.code_edit_model is None:
                 await self.get_config()
-            assert self.completions_model is not None
-            return self.completions_model
+            assert self.code_edit_model is not None
+            return self.code_edit_model
         except:
             config = ModelConfig(
-                chatModel="openai:gpt-3.5-turbo", completionsModel="openai:gpt-3.5-turbo"
+                chatModel="openai:gpt-3.5-turbo", codeEditModel="openai:gpt-3.5-turbo"
             )
             return config.create_completions()
 
@@ -258,7 +257,7 @@ class LspServer(BaseLspServer):
             return self.chat_model
         except:
             config = ModelConfig(
-                chatModel="openai:gpt-3.5-turbo", completionsModel="openai:gpt-3.5-turbo"
+                chatModel="openai:gpt-3.5-turbo", codeEditModel="openai:gpt-3.5-turbo"
             )
             return config.create_chat()
 

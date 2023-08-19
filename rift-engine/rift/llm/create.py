@@ -9,11 +9,11 @@ from rift.llm.abstract import AbstractChatCompletionProvider, AbstractCodeComple
 
 class ModelConfig(BaseModel):
     chatModel: str
-    completionsModel: str
+    codeEditModel: str
     openaiKey: Optional[SecretStr] = None
 
     def __hash__(self):
-        return hash((self.chatModel, self.completionsModel))
+        return hash((self.chatModel, self.codeEditModel))
 
     def __eq__(self, other):
         return hash(self) == hash(other)
@@ -24,13 +24,13 @@ class ModelConfig(BaseModel):
         return c
 
     def create_completions(self) -> AbstractCodeCompletionProvider:
-        return create_client(self.completionsModel, self.openaiKey)
+        return create_client(self.codeEditModel, self.openaiKey)
 
     @classmethod
     def default(cls):
         return ModelConfig(
-            completionsModel="gpt4all:ggml-replit-code-v1-3b",
-            chatModel="gpt4all:ggml-mpt-7b-chat",
+            codeEditModel="openai:gpt-4",
+            chatModel="openai:gpt-3.5-turbo",
         )
 
 

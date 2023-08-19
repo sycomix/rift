@@ -414,7 +414,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
         payload = params.dict(exclude_none=True)
         payload["stream"] = True
         path = self._make_path(endpoint)
-        logger.info(f"{payload=}")
+        # logger.info(f"{payload=}")
         async with self.session.post(path, params=self.url_query, json=payload) as resp:
             if not resp.ok:
                 await self.handle_error(resp)

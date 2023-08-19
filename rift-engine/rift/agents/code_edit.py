@@ -71,7 +71,7 @@ class CodeEditAgent(Agent):
     @classmethod
     async def create(cls, params: CodeEditAgentParams, server):
         logger.info(f"{params=}")
-        model = await server.ensure_completions_model()  # TODO: not right, fix
+        model = await server.ensure_code_edit_model()  # TODO: not right, fix
         state = CodeEditAgentState(
             model=model,
             document=server.documents[params.textDocument.uri],
@@ -180,12 +180,13 @@ class CodeEditAgent(Agent):
                     diff_queue = asyncio.Queue()
 
                     async def send_diff(new_text: str):
-                        fuel = 10
+                        max_fuel = 10
+                        fuel = max_fuel
                         while True:
                             if self.state._done._value:
                                 break
                             if fuel <= 0:
-                                raise Exception(":(")
+                                raise Exception(f"recursion_limit={max_fuel} reached")
                             try:
                                 # diff = dmp.diff_lineMode(self.selection_text, new_text, None)
                                 # # dmp.diff_cleanupSemantic(diff)
@@ -212,9 +213,11 @@ class CodeEditAgent(Agent):
                                 cf = asyncio.get_running_loop().create_future()
                                 self.state.change_futures[diff_text] = cf
 
+                                # logger.info("applying edit")
                                 await self.server.apply_range_edit(
                                     self.state.document.uri, self.RANGE, diff_text
                                 )
+                                # logger.info("applied")
 
                                 def add_pos_text(pos: lsp.Position, text: str):
                                     line_delta = text.count("\n")

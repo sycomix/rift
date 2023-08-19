@@ -210,13 +210,6 @@ export class AgentStateLens extends vscode.CodeLens {
     }
 }
 
-interface ModelConfig {
-    chatModel: string;
-    completionsModel: string;
-    /** The API key for OpenAI, you can also set OPENAI_API_KEY. */
-    openai_api_key?: string;
-}
-
 export type AgentIdentifier = string;
 
 export class MorphLanguageClient
