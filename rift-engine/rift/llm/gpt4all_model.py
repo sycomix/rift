@@ -112,16 +112,19 @@ def model_name_to_tokenizer(name: str):
         return transformers.AutoTokenizer.from_pretrained("nomic-ai/gpt4all-j")
     elif name == "ggml-mpt-7b-chat":
         return transformers.AutoTokenizer.from_pretrained("nomic-ai/gpt4all-mpt")
-    elif name == "ggml-mpt-7b-chat":
+    elif name == "ggml-replit-code-v1-3b":
         return transformers.AutoTokenizer.from_pretrained("nomic-ai/ggml-replit-code-v1-3b")
+    elif name == "ggml-model-gpt4all-falcon-q4_0":
+        return transformers.AutoTokenizer.from_pretrained("nomic-ai/gpt4all-falcon")
     else:
-        error_msg = f"unsupported model: {name}"
+        error_msg = f"WARNING: No tokenizer found for model={name}. Defaulting to MPT tokenizer."
         logger.error(error_msg)
-        raise Exception(error_msg)
+        # raise Exception(error_msg)
+        return transformers.AutoTokenizer.from_pretrained("nomic-ai/gpt4all-mpt")
 
 
-DEFAULT_MODEL_NAME = "ggml-gpt4all-j-v1.3-groovy"
-# DEFAULT_MODEL_NAME = "ggml-mpt-7b-chat"
+# DEFAULT_MODEL_NAME = "ggml-gpt4all-j-v1.3-groovy"
+DEFAULT_MODEL_NAME = "ggml-mpt-7b-chat"
 # DEFAULT_MODEL_NAME = "ggml-replit-code-v1-3b"
 
 create_model_lock = threading.Lock()
