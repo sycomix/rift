@@ -177,13 +177,14 @@ class LspServer(BaseLspServer):
             result_documents[doc_item.uri] = doc_item
 
     @rpc_method("morph/applyWorkspaceEdit")
-    async def on_workspace_did_change_configuration(self, params: lsp.ApplyWorkspaceEditParams):
+    async def apply_workspace_edit(self, params: lsp.ApplyWorkspaceEditParams):
         return await self.apply_workspace_edit(params)
 
     async def get_config(self):
         """This should be called whenever the user changes the model config settings.
 
         It should also be called immediately after initialisation."""
+        logger.info("refreshing config")
         if self._loading_task is not None:
             idx = getattr(self, "_loading_idx", 0) + 1
             logger.debug(f"Queue of set_model_config tasks: {idx}")
@@ -213,6 +214,7 @@ class LspServer(BaseLspServer):
             asyncio.create_task(h.cancel("config changed"))
         self.completions_model = config.create_completions()
         self.chat_model = config.create_chat()
+        logger.info(f"created new models: {self.chat_model=} {self.completions_model=}")
 
         self._loading_task = asyncio.gather(
             self.completions_model.load(),

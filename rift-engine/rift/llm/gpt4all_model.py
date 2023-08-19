@@ -40,24 +40,7 @@ from threading import Lock
 # from transformers import LlamaTokenizer
 import transformers
 
-# ENCODER = LlamaTokenizer.from_pretrained("oobabooga/llama-tokenizer")
 ENCODER_LOCK = Lock()
-
-
-def message_length(msg: Message):
-    with ENCODER_LOCK:
-        return get_num_tokens(msg.content)
-
-
-def auto_truncate(messages: List[Message]):
-    tail_messages: List[Message] = []
-    running_length = 0
-    for msg in reversed(messages[1:]):
-        running_length += message_length(msg)
-        if running_length > 1536:
-            break
-        tail_messages.insert(0, msg)
-    return [messages[0]] + tail_messages
 
 
 generate_lock = asyncio.Lock()
@@ -132,7 +115,9 @@ def model_name_to_tokenizer(name: str):
     elif name == "ggml-mpt-7b-chat":
         return transformers.AutoTokenizer.from_pretrained("nomic-ai/ggml-replit-code-v1-3b")
     else:
-        raise Exception(f"unsupported model: {name}")
+        error_msg = f"unsupported model: {name}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
 
 
 DEFAULT_MODEL_NAME = "ggml-gpt4all-j-v1.3-groovy"

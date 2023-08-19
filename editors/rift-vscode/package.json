@@ -4,7 +4,7 @@
   "publisher": "morph",
   "displayName": "Rift",
   "description": "Rift: an AI-native language server for your personal AI software engineer.",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "icon": "resources/vsce-icon.png",
   "engines": {
     "vscode": "^1.71.0"
@@ -55,7 +55,6 @@
           "type": "string",
           "default": "openai:gpt-3.5-turbo",
           "enum": [
-            "gpt4all:ggml-replit-code-v1-3b",
             "openai:gpt-3.5-turbo",
             "openai:gpt-4"
           ],
