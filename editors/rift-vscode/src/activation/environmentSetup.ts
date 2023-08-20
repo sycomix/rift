@@ -299,6 +299,13 @@ export async function runRiftCodeEngine() {
                                     vscode.window.showErrorMessage("Could not kill the rift processes. Error - " + err.message);
                                 }
                             });
+                        }
+                        else if (process.platform === "darwin") {
+                            aexec("pkill -f rift", (err, stdout, stderr) => {
+                                if (err) {
+                                    vscode.window.showErrorMessage("Could not kill the rift processes. Error - " + err.message);
+                                }
+                            });
                         } else {
                             vscode.window.showErrorMessage("Sorry, this feature is not supported on your platform.");
                         }
