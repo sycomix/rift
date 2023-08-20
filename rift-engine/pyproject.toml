@@ -7,7 +7,7 @@ allow-direct-references = true
 
 [project]
 name = "pyrift"
-version = "2.0.15"
+version = "2.0.16"
 description = ''
 readme = "README.md"
 requires-python = ">=3.9"
@@ -30,7 +30,8 @@ dependencies = [
   "art",
   "gpt-engineer @ git+https://www.github.com/morph-labs/gpt-engineer",
   "aider-chat @ git+https://github.com/morph-labs/aider",
-  "smol_dev @ git+https://github.com/morph-labs/smol_dev"
+  "smol_dev @ git+https://github.com/morph-labs/smol_dev",
+  "protobuf"
 ]
 
 [project.optional-dependencies]
