@@ -27,10 +27,10 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 ![smol screencast](https://github.com/morph-labs/rift/blob/pranav/dev/assets/smol.gif)
 
 ## Tips
-- Press Command+K to focus the Rift Omnibar.
+- Press Command+M or Command+K to focus the Rift Omnibar.
   - Once focused, you can either engage with the current chat or use a slash-command (e.g. `/aider`) to spawn a new agent.
 - Each instance of a Rift Chat or Code Edit agent will remain attached to the open file / selection you used to spawn it.
-  - To switch to a new file or request a code edit on a new selection, spawn a new agent by pressing Command+K and running a slash-command (e.g. `/edit`)
+  - To switch to a new file or request a code edit on a new selection, spawn a new agent by pressing Command+M or Command+K and running a slash-command (e.g. `/edit`)
   - Both Rift Chat and Code Edit see a window around your cursor or selection in the currently active editor window. To tell them about other resources in your codebase, mention them with `@`.
   - Code Edit 
 - You can `@`-mention files and directories to tell your agents about other parts of the codebase.
@@ -41,6 +41,8 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 
 ## Getting started
 Install the VSCode extension from the VSCode Marketplace. By default, the extension will attempt to automatically start the Rift Code Engine every time the extension is activated. During this process, if a `rift` executable is not found in a virtual environment under `~/.morph`, the extension will ask you to attempt an automatic installation of a Python environment and the Rift Code Engine. To disable this behavior, such as for development, go to the VSCode settings, search for "rift", and set `rift.autostart` to `false`.
+
+When `rift.autostart` is `true`, the extension will attempt to automatically start the Rift Code Engine. You can set `rift.riftPath` to change the path of the Rift executable, which may be necessary due to interactions with WSL on Windows. When `rift.autostart` is `false`, the extension will display a loading indicator while it waits for a server instance to connect to `rift.riftServerPort` (default 7797).
 
 If the automatic installation of the Rift Code Engine fails, follow the below instructions for manual installation.
 

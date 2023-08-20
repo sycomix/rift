@@ -181,7 +181,9 @@ def main(
         asyncio.run(metaserver.run_forever(), debug=debug)
 
 
-if __name__ == "__main__":
+def entrypoint():
     import fire
-
     fire.Fire(main)
+
+if __name__ == "__main__":
+    entrypoint()

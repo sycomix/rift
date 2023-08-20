@@ -19,6 +19,13 @@ export function activate(context: vscode.ExtensionContext) {
     let morph_language_client = new MorphLanguageClient(context);
 
     context.subscriptions.push(
+        vscode.commands.registerCommand("rift.restart", () => {
+          morph_language_client.restart().then(() => console.log("restarted"));
+        })
+    );
+  
+
+    context.subscriptions.push(
         vscode.languages.registerCodeLensProvider("*", morph_language_client)
     );
 

@@ -4,7 +4,7 @@
   "publisher": "morph",
   "displayName": "Rift",
   "description": "Rift: an AI-native language server for your personal AI software engineer.",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "icon": "resources/vsce-icon.png",
   "engines": {
     "vscode": "^1.71.0"
@@ -19,14 +19,14 @@
   "contributes": {
     "keybindings": [
       {
-        "command": "rift.run_agent",
-        "key": "ctrl+m",
-        "when": "editorTextFocus"
-      },
-      {
         "command": "rift.focus_omnibar",
         "key": "ctrl+k",
         "mac": "cmd+k"
+      },
+      {
+        "command": "rift.focus_omnibar",
+        "key": "ctrl+m",
+        "mac": "cmd+m"
       }
     ],
     "configuration": {
@@ -34,10 +34,10 @@
       "properties": {
         "rift.autostart": {
           "type": [
-            "boolean",
-            "null"
+            "boolean"
           ],
           "default": true,
+          "description": "Automatically start the Rift Code Engine upon extension activation. If set to `false`, the extension will wait to connect to a Rift Code Engine process on port 7797. This should be set to `false` if you are developing the Rift Code Engine.",
           "enum": [
             true,
             false
@@ -51,6 +51,21 @@
           "default": null,
           "description": "OpenAI API key"
         },
+        "rift.riftPath": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Optional path to Rift executable"
+        },
+        "rift.riftServerPort": {
+          "type": [
+            "number"
+          ],
+          "default": 7797,
+          "description": "Default port for the Rift Code Engine. Defaults to 7797."
+        },        
         "rift.codeEditModel": {
           "type": "string",
           "default": "openai:gpt-3.5-turbo",
@@ -127,12 +142,8 @@
     },
     "commands": [
       {
-        "command": "rift.run_agent",
-        "title": "Rift: Code Completion"
-      },
-      {
-        "command": "rift.start_server",
-        "title": "Rift: Start Server"
+        "command": "rift.restart",
+        "title": "Rift: Restart"
       },
       {
         "command": "rift.reset_chat",
@@ -145,10 +156,6 @@
       {
         "command": "rift.focus_omnibar",
         "title": "Rift: Focus Omnibar"
-      },
-      {
-        "command": "rift.mockTypeCommandP",
-        "title": "Rift: Mock Mock Mock"
       }
     ]
   },
