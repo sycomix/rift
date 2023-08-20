@@ -42,7 +42,14 @@ https://github.com/morph-labs/rift/assets/13114790/726f35ed-4959-4f69-9a80-fd903
 ## Getting started
 Install the VSCode extension from the VSCode Marketplace. By default, the extension will attempt to automatically start the Rift Code Engine every time the extension is activated. During this process, if a `rift` executable is not found in a virtual environment under `~/.morph`, the extension will ask you to attempt an automatic installation of a Python environment and the Rift Code Engine. To disable this behavior, such as for development, go to the VSCode settings, search for "rift", and set `rift.autostart` to `false`.
 
-When `rift.autostart` is `true`, the extension will attempt to automatically start the Rift Code Engine. You can set `rift.riftPath` to change the path of the Rift executable, which may be necessary due to interactions with WSL on Windows. When `rift.autostart` is `false`, the extension will display a loading indicator while it waits for a server instance to connect to `rift.riftServerPort` (default 7797).
+When `rift.autostart` is `true`, the extension will attempt to automatically start the Rift Code Engine. You can set `rift.riftPath` to change the path of the Rift executable, which may be necessary due to interactions with WSL on Windows.
+
+When `rift.autostart` is `false`, the extension will display a loading indicator while it waits for a server instance to connect to `rift.riftServerPort` (default 7797). In this scenario, you will have to start the Rift server instance manually by running it in a terminal, e.g. with
+
+```bash
+source ~/.morph/env/bin/activate
+rift --port 7797
+```
 
 If the automatic installation of the Rift Code Engine fails, follow the below instructions for manual installation.
 
