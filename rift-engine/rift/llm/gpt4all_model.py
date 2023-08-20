@@ -116,6 +116,12 @@ def model_name_to_tokenizer(name: str):
         return transformers.AutoTokenizer.from_pretrained("nomic-ai/ggml-replit-code-v1-3b")
     elif name == "ggml-model-gpt4all-falcon-q4_0":
         return transformers.AutoTokenizer.from_pretrained("nomic-ai/gpt4all-falcon")
+    elif name == "orca-mini-3b.ggmlv3.q4_0":
+        try:
+            return transformers.AutoTokenizer.from_pretrained("psmathur/orca_mini_3b")
+        except ImportError as e:
+            logging.getLogger().error(f"ImportError: {e} - you may need to install the protobuf package")
+            raise e
     else:
         error_msg = f"WARNING: No tokenizer found for model={name}. Defaulting to MPT tokenizer."
         logger.error(error_msg)
