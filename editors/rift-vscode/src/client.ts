@@ -75,7 +75,7 @@ function tcpServerOptions(
 function createServerOptions(
   port: number = 7797
 ): ServerOptions {
-  const args = ["127.0.0.1", `${port}`];
+  const args = ["--port", `${port}`];
   console.log(`args=${args}`)
   const transport = { kind: 3, port: port };
 
@@ -454,9 +454,9 @@ export class MorphLanguageClient
   }
 
   async restart() {
-    try { await this.client?.stop(); }
+    try { await this.client?.stop(1); }
     catch {};
-    try { await this.client?.dispose(); }
+    try { await this.client?.dispose(1); }
     catch {};
     await this.create_client();
   }

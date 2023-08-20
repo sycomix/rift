@@ -1,3 +1,4 @@
+import sys
 import asyncio
 import glob
 import json
@@ -26,6 +27,7 @@ class LspLogHandler(logging.Handler):
         super().__init__()
         self.server = server
         self.tasks: set[asyncio.Task] = set()
+        self.shutdown = False
 
     def emit(self, record: logging.LogRecord) -> None:
         if self.server.status != RpcServerStatus.running:
@@ -95,10 +97,10 @@ class LspServer(BaseLspServer):
             openClose=True,
             change=lsp.TextDocumentSyncKind.incremental,
         )
-        self.active_agents = {}
+        self.active_agents: Dict[str, Agent] = {}
         self._loading_task = None
         self._chat_loading_task = None
-        self.logger = logging.getLogger(f"rift")
+        self.logger = logging.getLogger("rift")
         self.logger.addHandler(LspLogHandler(self))
 
     @rpc_method("workspace/didChangeConfiguration")
@@ -209,8 +211,9 @@ class LspServer(BaseLspServer):
             return
         self.model_config = config
         logger.info(f"{self} recieved model config {config}")
+        cancel_tasks = []
         for k, h in self.active_agents.items():
-            asyncio.create_task(h.cancel("config changed"))
+            cancel_tasks.append(asyncio.create_task(h.cancel("config changed")))
         self.code_edit_model = config.create_completions()
         self.chat_model = config.create_chat()
         logger.info(f"created new models: {self.chat_model=} {self.code_edit_model=}")
@@ -219,6 +222,7 @@ class LspServer(BaseLspServer):
             self.code_edit_model.load(),
             self.chat_model.load(),
         )
+        await asyncio.wait(cancel_tasks)
         try:
             await self._loading_task
         except asyncio.CancelledError:
@@ -350,3 +354,16 @@ class LspServer(BaseLspServer):
             self.active_agents.pop(params.id, None)
         else:
             logger.error(f"no agent with id {params.id}")
+
+    @rpc_method("shutdown")
+    async def on_shutdown(self, params: None):
+        logger.info(f"shutdown {params=}")
+        self.shutdown = True
+        cancel_tasks = []
+        for agent in self.active_agents.values():
+            cancel_tasks.append(asyncio.create_task(agent.cancel()))
+        await asyncio.wait(cancel_tasks)
+
+    @rpc_method("exit")
+    async def on_exit(self, params: None):
+        sys.exit(0 if self.shutdown else 1)

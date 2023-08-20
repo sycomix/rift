@@ -77,7 +77,7 @@ class CodeCapabilitiesServer:
         except Exception as e:
             logger.error("caught: " + str(e))
             logger.info(
-                f"connection closed, but Rift is still running and accepting new connections."
+                "connection closed, but Rift is still running and accepting new connections."
             )
 
     async def run_lsp_tcp_client_mode(self):
@@ -175,7 +175,11 @@ def main(
     port: LspPort = 7797,
     version=False,
     debug=False,
+    socket: LspPort = 7797,
 ):
+    if socket != port:
+        port = int(socket)
+        logger.info(f"setting port={int(socket)}")
     metaserver = create_metaserver(host, port, version, debug)
     if metaserver:
         asyncio.run(metaserver.run_forever(), debug=debug)

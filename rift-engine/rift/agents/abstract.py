@@ -272,6 +272,15 @@ class Agent:
         # logger.info(f"{progress=}")
         await self.server.notify(f"morph/{self.agent_type}_{self.agent_id}_send_progress", progress)
 
+    async def set_api_keys(self):
+        # refresh configuration and set openaiKey if present
+        settings = await self.server.get_workspace_configuration(section="rift")
+        settings = settings[0]
+
+        if "openaiKey" in settings and settings["openaiKey"]:
+            logger.info("found `rift.openaiKey` in settings, setting `OPENAI_API_KEY` environment variable")
+            os.environ["OPENAI_API_KEY"] = settings["openaiKey"]
+
     async def main(self):
         """
         The main method called by the LSP server to handle method `morph/run`.
@@ -286,6 +295,7 @@ class Agent:
         Raises:
             asyncio.CancelledError: If the task being run was cancelled.
         """
+        await self.set_api_keys()
         # Create a task to run with assigned description and run method
         self.task = AgentTask(description=self.agent_type, task=self.run)
 
@@ -322,6 +332,7 @@ class ThirdPartyAgent(Agent):
     )
 
     async def main(self):
+        await self.set_api_keys()
         # Create a task to run with assigned description and run method
         self.task = AgentTask(description=self.agent_type, task=self.run)
 
@@ -333,13 +344,6 @@ class ThirdPartyAgent(Agent):
             await self.send_progress()
 
             await self.send_chat_update(self.third_party_warning_message, prepend=True)
-
-            # refresh configuration and set openaiKey if present
-            settings = await self.server.get_workspace_configuration(section="rift")
-            settings = settings[0]
-
-            if "openaiKey" in settings and settings["openaiKey"]:
-                os.environ["OPENAI_API_KEY"] = settings["openaiKey"]
 
             # run `self.run`
             result_t = asyncio.create_task(self.task.run())
