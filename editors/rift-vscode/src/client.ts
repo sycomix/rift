@@ -797,7 +797,7 @@ export class MorphLanguageClient
         [agentId]: {
           ...state.agents[agentId],
           hasNotification:
-            agentId == state.selectedAgentId ? false : hasNotification, //this ternary operatory will make sure we don't set currently selected agents as having notifications
+            agentId == state.selectedAgentId ? false : hasNotification,
         },
       },
     }));
@@ -954,7 +954,7 @@ class Agent {
     this.morph_language_client.sendProgressChange(params);
 
     if (this.agent_type === "code_edit") {
-      const params2 = params as AgentProgress<CodeEditPayload>; // dont ask me how I know -b
+      const params2 = params as AgentProgress<CodeEditPayload>;
       console.log("code edit progress");
       console.log(params);
 

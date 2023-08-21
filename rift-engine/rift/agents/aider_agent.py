@@ -347,7 +347,7 @@ class Aider(agent.ThirdPartyAgent):
                 filename = filename.__fspath__()
             file_change = file_diff.get_file_change(path=filename, new_content=new_content)
             file_changes.append(file_change)
-            print(f"{file_changes=}")
+            # print(f"{file_changes=}")
 
         # This is called when aider wants to commit after writing all the files
         # This is where the user should accept/reject the changes
