@@ -20,11 +20,6 @@
     "keybindings": [
       {
         "command": "rift.focus_omnibar",
-        "key": "ctrl+k",
-        "mac": "cmd+k"
-      },
-      {
-        "command": "rift.focus_omnibar",
         "key": "ctrl+m",
         "mac": "cmd+m"
       }

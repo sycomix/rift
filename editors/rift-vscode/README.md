@@ -39,10 +39,10 @@ bash reinstall.sh # installs the extension to `code`, change the executable as n
 Then open VSCode.
 
 ## Usage
-- Press Command+K to focus the Rift Omnibar.
+- Press Command+M to focus the Rift Omnibar.
   - Once focused, you can either engage with the current chat or use a slash-command (e.g. `/aider`) to spawn a new agent.
 - Each instance of a Rift Chat or Code Edit agent will remain attached to the open file / selection you used to spawn it.
-  - To switch to a new file or request a code edit on a new selection, spawn a new agent by pressing Command+K and running a slash-command (e.g. `/edit`)
+  - To switch to a new file or request a code edit on a new selection, spawn a new agent by pressing Command+M and running a slash-command (e.g. `/edit`)
   - Both Rift Chat and Code Edit see a window around your cursor or selection in the currently active editor window. To tell them about other resources in your codebase, mention them with `@`.
   - Code Edit 
 - You can `@`-mention files and directories to tell your agents about other parts of the codebase.
