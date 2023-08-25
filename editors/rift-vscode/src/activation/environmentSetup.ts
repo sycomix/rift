@@ -138,7 +138,7 @@ export function morphBinPath(executable: string): string {
 
 
 export function ensureRift(): void {
-  if (vscode.workspace.getConfiguration("rift").get("autostart", true)) {
+  if (!vscode.workspace.getConfiguration("rift").get("autostart", true)) {
     return
   }
   console.log("Start - Checking if `rift` is in PATH.");
