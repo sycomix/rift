@@ -6,3 +6,4 @@ from .engineer import *
 from .registry import *
 from .rift_chat import *
 from .smol import *
+from .mentat_agent import *
