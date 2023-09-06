@@ -174,11 +174,10 @@ def contains_direct_return(body: Node):
 
 
 def find_declarations(
-    code: Code, file: File, language: Language, node: Node, scope: Scope
+    code: Code, file: File, language: Language, node: Node, scope: Scope, exported: bool = False
 ) -> List[SymbolInfo]:
     body_sub = None
     docstring: str = ""
-    exported = False
     has_return = False
 
     def mk_value_decl(id: Node, parents: List[Node], value_kind: ValueKind):
@@ -408,9 +407,8 @@ def find_declarations(
 
     elif node.type == "export_statement" and language in ["js", "typescript", "tsx"]:
         if len(node.children) >= 2:
-            exported = True
             return find_declarations(
-                code=code, file=file, language=language, node=node.children[1], scope=scope
+                code=code, exported=True, file=file, language=language, node=node.children[1], scope=scope
             )
 
     elif node.type in ["interface_declaration", "type_alias_declaration"] and language in ["js", "typescript", "tsx"]:

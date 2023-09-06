@@ -239,6 +239,8 @@ class SymbolInfo(ABC):
             lines.append(f"   scope: {self.scope}")
         if self.docstring != "":
             lines.append(f"   docstring: {self.docstring}")
+        if self.exported:
+            lines.append(f"   exported: {self.exported}")
 
 
     @abstractmethod
