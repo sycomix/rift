@@ -182,6 +182,65 @@ class Tests:
         .lstrip()
         .encode("utf-8")
     )
+    code_ruby = (
+        dedent(
+            """
+        def sum(a, b)
+            # This is a docstring
+            a + b
+        end
+
+        def output
+            puts 'hello'
+        end
+
+        def greetings(a)
+			return 'ciao' if a == 1
+            
+            'hello'
+        end
+
+        def swap(a, b)
+            temp = a
+            a = b
+            b = temp
+            return a, b
+        end
+
+        # This is a docstring for class Person
+        class Person
+            attr_accessor :name, :age
+            
+            def initialize(name, age)
+                @name = name
+                @age = age
+            end
+            
+            def introduce
+                puts "Hi, I'm #{@name} and I'm #{@age} years old."
+            end
+        end
+
+        module Cream
+            def cream?
+                true
+            end
+        end
+
+        module Foo
+            class Bar
+                def pour(container, liquid)
+                    for liquid in container do
+                        puts liquid
+                    end
+                end
+            end
+        end
+    """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
 
 
 def get_test_project():
@@ -200,6 +259,7 @@ def get_test_project():
     new_file(IR.Code(Tests.code_cpp), "test.cpp", "cpp")
     new_file(IR.Code(Tests.code_ocaml), "test.ml", "ocaml")
     new_file(IR.Code(Tests.code_rescript), "test.res", "rescript")
+    new_file(IR.Code(Tests.code_ruby), "test.rb", "ruby")
 
     return project
 

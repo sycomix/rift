@@ -161,6 +161,7 @@ def contains_direct_return(body: Node):
             "function_declaration",
             "function_definition",
             "method_definition",
+            "method",
         ]:
             continue
         # If the child is a return statement, return True.
@@ -244,8 +245,21 @@ def find_declarations(
             docstring = docstring_
 
     body_node = node.child_by_field_name("body")
-    if body_node is not None:
-        body_sub = (body_node.start_byte, body_node.end_byte)
+
+    def process_ruby_body(root_node: Node) -> Optional[str]:
+        nonlocal body_sub
+        method_name_node = root_node.child_by_field_name("name")
+
+        if method_name_node is not None:
+            start_node = method_name_node
+            parameters_node = node.child_by_field_name("parameters")
+            if parameters_node is not None:
+                start_node = parameters_node
+
+            if start_node.next_sibling is not None:
+                start_node = start_node.next_sibling
+            body_sub = (start_node.start_byte, root_node.end_byte)
+
     def process_ocaml_body(n: Node) -> Optional[Type]:
         nonlocal body_node, body_sub
         body_node = n.child_by_field_name("body")
@@ -262,22 +276,32 @@ def find_declarations(
             else:
                 body_sub = (body_node.start_byte, body_node.end_byte)
 
+    if body_node is not None:
+        body_sub = (body_node.start_byte, body_node.end_byte)
+    elif language == "ruby":
+        process_ruby_body(node)
 
     if node.type in [
         "class_definition",
         "class_declaration",
         "class_specifier",
         "namespace_definition",
+        "class",
+        "module"
     ]:
         is_namespace = node.type == "namespace_definition"
+        is_module = node.type == "module"
         superclasses_node = node.child_by_field_name("superclasses")
         superclasses = None
         if superclasses_node is not None:
             superclasses = superclasses_node.text.decode()
         body_node = node.child_by_field_name("body")
         name = node.child_by_field_name("name")
+        if body_node is None and name is not None and language == "ruby":
+            body_node = node
+
         if body_node is not None and name is not None:
-            if is_namespace:
+            if is_namespace or language == "ruby":
                 separator = "::"
             else:
                 separator = "."
@@ -286,14 +310,21 @@ def find_declarations(
                 code=code, file=file, language=language, node=body_node, scope=scope
             )
             docstring = ""
-            # see if the first child is a string expression statemetns, and if so, use it as the docstring
+            # see if the first child is a string expression statements, and if so, use it as the docstring
             if body_node.child_count > 0 and body_node.children[0].type == "expression_statement":
                 stmt = body_node.children[0]
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     docstring = docstring_node.text.decode()
+            elif node.prev_sibling is not None and node.prev_sibling.type == "comment":
+                # parse class comments before class definition
+                docstring_node = node.prev_sibling
+                docstring = docstring_node.text.decode()
+
             if is_namespace:
                 declaration = mk_namespace_decl(id=name, body=body, parents=[node])
+            elif is_module:
+                declaration = mk_module_decl(id=name, body=body, parents=[node])
             else:
                 declaration = mk_class_decl(id=name, body=body, parents=[node], superclasses=superclasses)
             file.add_symbol(declaration)
@@ -327,7 +358,7 @@ def find_declarations(
         file.add_symbol(declaration)
         return [declaration]
 
-    elif node.type in ["function_definition", "function_declaration", "method_definition"]:
+    elif node.type in ["function_definition", "function_declaration", "method_definition", "method"]:
         id: Optional[Node] = None
         for child in node.children:
             if child.type in ["identifier", "property_identifier"]:
@@ -599,17 +630,19 @@ def find_declarations(
                 return parse_module_binding(nodes)
             else:
                 raise Exception(f"Unexpected node type in module_declaration: {m1.type}")
-
     # if not returned earlier
     return []
 
 def process_body(
     code: Code, file: File, language: Language, node: Node, scope: Scope
 ) -> List[Statement]:
-    return [
-        process_statement(code=code, file=file, language=language, node=child, scope=scope)
-        for child in node.children
-    ]
+    statements = []
+    for child in node.children:
+        if language == "ruby" and child.text.decode() == "name":
+            continue 
+        statement = process_statement(code=code, file=file, language=language, node=child, scope=scope)
+        statements.append(statement)
+    return statements
 
 def find_import(node: Node) -> Optional[Import]:
     substring = (node.start_byte, node.end_byte)

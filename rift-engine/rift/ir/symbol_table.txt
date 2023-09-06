@@ -305,6 +305,73 @@ Function: bindings
    body: (435, 452)
    parameters: [z:int]
    return_type: int
+=== Symbol Table for test.rb ===
+Function: sum
+   language: ruby
+   range: ((0, 0), (3, 11))
+   substring: (0, 77)
+   body: (26, 77)
+   parameters: [a, b]
+Function: output
+   language: ruby
+   range: ((5, 8), (7, 11))
+   substring: (87, 134)
+   body: (110, 134)
+Function: greetings
+   language: ruby
+   range: ((9, 8), (13, 11))
+   substring: (144, 220)
+   body: (164, 220)
+   parameters: [a]
+Function: swap
+   language: ruby
+   range: ((15, 8), (20, 11))
+   substring: (230, 340)
+   body: (257, 340)
+   parameters: [a, b]
+Function: initialize
+   language: ruby
+   range: ((26, 12), (29, 15))
+   substring: (461, 558)
+   scope: Person::
+   body: (503, 558)
+   parameters: [name, age]
+Function: introduce
+   language: ruby
+   range: ((31, 12), (33, 15))
+   substring: (572, 668)
+   scope: Person::
+   body: (602, 668)
+Class: Person
+   language: ruby
+   range: ((23, 8), (34, 11))
+   substring: (397, 680)
+   docstring: # This is a docstring for class Person
+Function: cream?
+   language: ruby
+   range: ((37, 12), (39, 15))
+   substring: (715, 762)
+   scope: Cream::
+   body: (742, 762)
+Module: Cream
+   language: ruby
+   range: ((36, 8), (40, 11))
+   substring: (690, 774)
+Function: pour
+   language: ruby
+   range: ((44, 16), (48, 19))
+   substring: (833, 987)
+   scope: Foo::Bar::
+   body: (881, 987)
+   parameters: [container, liquid]
+Class: Bar
+   language: ruby
+   range: ((43, 12), (49, 15))
+   substring: (807, 1003)
+Module: Foo
+   language: ruby
+   range: ((42, 8), (50, 11))
+   substring: (784, 1015)
 
 === Project Map ===
 File: test.c
@@ -366,3 +433,16 @@ File: test.res
     let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ())
   let rec multiple = (x:int, y:int) : int
   and bindings = (z:int)
+File: test.rb
+  def sum(a, b)
+  def output
+  def greetings(a)
+  def swap(a, b)
+  class Person
+    def initialize(name, age)
+    def introduce
+  module Cream
+    def cream?
+  module Foo
+    class Bar
+      def pour(container, liquid)
