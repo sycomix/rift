@@ -183,7 +183,6 @@ class DeclarationFinder:
         self.node = node
         self.scope = scope
 
-        self.body_node: Optional[Node] = None
         self.body_sub: Optional[Substring] = None
         self.docstring = ""
         self.exported = False
@@ -246,23 +245,25 @@ class DeclarationFinder:
         container_kind = ModuleKind()
         return self.mk_container_decl(id=id, body=body, container_kind=container_kind, parents=parents)
 
-    def process_ocaml_body(self, n: Node) -> Optional[Type]:
-        self.body_node = n.child_by_field_name("body")
-        if self.body_node is not None:
-            node_before = self.body_node.prev_sibling
+    def process_ocaml_body(self, n: Node) -> Tuple[Optional[Type], Optional[Node]]:
+        type = None
+        body_node = n.child_by_field_name("body")
+        if body_node is not None:
+            node_before = body_node.prev_sibling
             if node_before is not None and node_before.type == "=":
                 # consider "=" part of the body
-                self.body_sub = (node_before.start_byte, self.body_node.end_byte)
+                self.body_sub = (node_before.start_byte, body_node.end_byte)
                 n2 = node_before.prev_sibling
                 if n2:
                     n3 = n2.prev_sibling
                     if n3 and n3.type == ":":
-                        return parse_type(self.language, n2)
+                        type = parse_type(self.language, n2)
             else:
-                self.body_sub = (self.body_node.start_byte, self.body_node.end_byte)
+                self.body_sub = (body_node.start_byte, body_node.end_byte)
+        return type, body_node
 
-    def process_ruby_body(self, root_node: Node) -> Optional[str]:
-        method_name_node = root_node.child_by_field_name("name")
+    def process_ruby_body(self) -> Node:
+        method_name_node = self.node.child_by_field_name("name")
         if method_name_node is not None:
             start_node = method_name_node
             parameters_node = self.node.child_by_field_name("parameters")
@@ -271,8 +272,19 @@ class DeclarationFinder:
 
             if start_node.next_sibling is not None:
                 start_node = start_node.next_sibling
-            self.body_sub = (start_node.start_byte, root_node.end_byte)
-
+            self.body_sub = (start_node.start_byte, self.node.end_byte)
+        return self.node
+    
+    def process_body(self) -> Optional[Node]:
+        if self.language == "ocaml":
+            pass # handled for each declaration in a let binding
+        elif self.language == "ruby":
+            return self.process_ruby_body()
+        else:
+            body_node = self.node.child_by_field_name("body")
+            if body_node is not None:
+                self.body_sub = (body_node.start_byte, body_node.end_byte)
+            return body_node
 
     def find_declarations(self) -> List[SymbolInfo]:
         previous_node = self.node.prev_sibling
@@ -283,11 +295,7 @@ class DeclarationFinder:
 
         node = self.node
         language = self.language
-        self.body_node = node.child_by_field_name("body")
-        if self.body_node is not None:
-            self.body_sub = (self.body_node.start_byte, self.body_node.end_byte)
-        elif self.language == "ruby":
-            self.process_ruby_body(node)
+        body_node = self.process_body()
 
         if\
             (node.type in ["class_specifier"] and language in [ "c", "cpp"]) or \
@@ -302,24 +310,21 @@ class DeclarationFinder:
             superclasses = None
             if superclasses_node is not None:
                 superclasses = superclasses_node.text.decode()
-            self.body_node = node.child_by_field_name("body")
             name = node.child_by_field_name("name")
-            if self.body_node is None and name is not None and language == "ruby":
-                self.body_node = node
 
-            if self.body_node is not None and name is not None:
+            if body_node is not None and name is not None:
                 if is_namespace or language == "ruby":
                     separator = "::"
                 else:
                     separator = "."
                 new_scope = self.scope + name.text.decode() + separator
                 body = process_body(
-                    code=self.code, file=self.file, language=language, node=self.body_node, scope=new_scope
+                    code=self.code, file=self.file, language=language, node=body_node, scope=new_scope
                 )
                 self.docstring = ""
                 # see if the first child is a string expression statements, and if so, use it as the docstring
-                if self.body_node.child_count > 0 and self.body_node.children[0].type == "expression_statement":
-                    stmt = self.body_node.children[0]
+                if body_node.child_count > 0 and body_node.children[0].type == "expression_statement":
+                    stmt = body_node.children[0]
                     if len(stmt.children) > 0 and stmt.children[0].type == "string":
                         docstring_node = stmt.children[0]
                         self.docstring = docstring_node.text.decode()
@@ -383,16 +388,16 @@ class DeclarationFinder:
             if return_type_node is not None:
                 return_type = parse_type(language=language, node=return_type_node)
             if (
-                self.body_node is not None
-                and len(self.body_node.children) > 0
-                and self.body_node.children[0].type == "expression_statement"
+                body_node is not None
+                and len(body_node.children) > 0
+                and body_node.children[0].type == "expression_statement"
             ):
-                stmt = self.body_node.children[0]
+                stmt = body_node.children[0]
                 if len(stmt.children) > 0 and stmt.children[0].type == "string":
                     docstring_node = stmt.children[0]
                     self.docstring = docstring_node.text.decode()
-            if self.body_node is not None:
-                self.has_return = contains_direct_return(self.body_node)
+            if body_node is not None:
+                self.has_return = contains_direct_return(body_node)
             if id is not None:
                 declaration = self.mk_fun_decl(id=id, parents=[node], parameters=parameters, return_type=return_type)
                 self.file.add_symbol(declaration)
@@ -486,7 +491,7 @@ class DeclarationFinder:
             declarations: List[SymbolInfo] = []
             for child in node.children:
                 if child.type == "let_binding":
-                    return_type = self.process_ocaml_body(child)
+                    return_type, _ = self.process_ocaml_body(child)
                     pattern_node = child.child_by_field_name("pattern")
                     if pattern_node is not None and pattern_node.type == "value_name":
                         for grandchild in child.children:
@@ -508,12 +513,12 @@ class DeclarationFinder:
         elif node.type == "module_definition" and language == "ocaml":
             for child in node.children:
                 if child.type == "module_binding":
-                    self.process_ocaml_body(child)
+                    _, body_node = self.process_ocaml_body(child)
                     name = child.child_by_field_name("name")
                     if name is not None:
                         new_scope = self.scope + name.text.decode() + "."
-                        if self.body_node is not None:
-                            body = process_body(code=self.code, file=self.file, language=language, node=self.body_node, scope=new_scope)
+                        if body_node is not None:
+                            body = process_body(code=self.code, file=self.file, language=language, node=body_node, scope=new_scope)
                         else:
                             body = []
                         declaration = self.mk_module_decl(id=name, body=body, parents=[node])
