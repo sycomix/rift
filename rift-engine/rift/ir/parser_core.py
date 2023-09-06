@@ -304,9 +304,9 @@ def find_declarations(
                 separator = "::"
             else:
                 separator = "."
-            scope = scope + name.text.decode() + separator
+            new_scope = scope + name.text.decode() + separator
             body = process_body(
-                code=code, file=file, language=language, node=body_node, scope=scope
+                code=code, file=file, language=language, node=body_node, scope=new_scope
             )
             docstring = ""
             # see if the first child is a string expression statements, and if so, use it as the docstring
@@ -503,9 +503,9 @@ def find_declarations(
                 process_ocaml_body(child)
                 name = child.child_by_field_name("name")
                 if name is not None:
-                    scope = scope + name.text.decode() + "."
+                    new_scope = scope + name.text.decode() + "."
                     if body_node is not None:
-                        body = process_body(code=code, file=file, language=language, node=body_node, scope=scope)
+                        body = process_body(code=code, file=file, language=language, node=body_node, scope=new_scope)
                     else:
                         body = []
                     declaration = mk_module_decl(id=name, body=body, parents=[node])
@@ -618,8 +618,8 @@ def find_declarations(
             else:
                 print(f"Unexpected module_binding nodes:{len(nodes)}")
             if id is not None and body is not None:
-                scope = scope + id.text.decode() + "."
-                body = process_body(code=code, file=file, language=language, node=body, scope=scope)
+                new_scope = scope + id.text.decode() + "."
+                body = process_body(code=code, file=file, language=language, node=body, scope=new_scope)
                 declaration = mk_module_decl(id=id, body=body, parents=[node])
                 file.add_symbol(declaration)
                 return [declaration]

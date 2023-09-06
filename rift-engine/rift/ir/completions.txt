@@ -19,7 +19,7 @@
             },
             {
                 "name": "A",
-                "scope": "A.",
+                "scope": "",
                 "kind": "Class",
                 "range": [
                     [
@@ -79,7 +79,7 @@
             },
             {
                 "name": "Nested",
-                "scope": "B.Nested.",
+                "scope": "B.",
                 "kind": "Class",
                 "range": [
                     [
@@ -94,7 +94,7 @@
             },
             {
                 "name": "B",
-                "scope": "B.",
+                "scope": "",
                 "kind": "Class",
                 "range": [
                     [

@@ -231,6 +231,16 @@ class SymbolInfo(ABC):
     def dump(self, lines: List[str]) -> None:
         raise NotImplementedError
 
+    def dump_common(self, id: str, lines: List[str]) -> None:
+        lines.append(
+            f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
+        )
+        if self.scope != "":
+            lines.append(f"   scope: {self.scope}")
+        if self.docstring != "":
+            lines.append(f"   docstring: {self.docstring}")
+
+
     @abstractmethod
     def kind(self) -> str:
         raise NotImplementedError
@@ -244,13 +254,7 @@ class ValueDeclaration(SymbolInfo):
         return self.value_kind.name()
 
     def dump(self, lines: List[str]) -> None:
-        lines.append(
-            f"{self.kind()}: {self.name}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
-        )
-        if self.scope != "":
-            lines.append(f"   scope: {self.scope}")
-        if self.docstring != "":
-            lines.append(f"   docstring: {self.docstring}")
+        self.dump_common(self.name, lines)
         if self.body_sub is not None:
             lines.append(f"   body: {self.body_sub}")
         self.value_kind.dump(lines)
@@ -270,11 +274,7 @@ class ContainerDeclaration(SymbolInfo):
             id = self.name + signature
         else:
             id = self.name
-        lines.append(
-            f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
-        )
-        if self.docstring != "":
-            lines.append(f"   docstring: {self.docstring}")
+        self.dump_common(id, lines)
 
 @dataclass
 class File:
