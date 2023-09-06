@@ -289,9 +289,9 @@ class DeclarationFinder:
     def find_declarations(self) -> List[SymbolInfo]:
         previous_node = self.node.prev_sibling
         if previous_node is not None and previous_node.type == "comment":
-            docstring_ = previous_node.text.decode()
-            if docstring_.startswith("/**"):
-                self.docstring = docstring_
+            docstring = previous_node.text.decode()
+            if docstring.startswith("/**"):
+                self.docstring = docstring
 
         node = self.node
         language = self.language
