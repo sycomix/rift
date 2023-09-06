@@ -281,14 +281,13 @@ def find_declarations(
     elif language == "ruby":
         process_ruby_body(node)
 
-    if node.type in [
-        "class_definition",
-        "class_declaration",
-        "class_specifier",
-        "namespace_definition",
-        "class",
-        "module"
-    ]:
+    if\
+        (node.type in ["class_specifier"] and language in [ "c", "cpp"]) or \
+        (node.type in ["class_declaration"] and language in ["javascript", "tsx", "typescript"]) or \
+        (node.type in ["class_definition"] and language in ["python"]) or \
+        (node.type in ["namespace_definition"] and language in ["cpp"]) or \
+        (node.type in ["class", "module"] and language == "ruby"):
+
         is_namespace = node.type == "namespace_definition"
         is_module = node.type == "module"
         superclasses_node = node.child_by_field_name("superclasses")
@@ -330,7 +329,7 @@ def find_declarations(
             file.add_symbol(declaration)
             return [declaration]
 
-    elif node.type in ["decorated_definition"]:  # python decorator
+    elif node.type in ["decorated_definition"] and language == "python":  # python decorator
         defitinion = node.child_by_field_name("definition")
         if defitinion is not None:
             return find_declarations(code, file, language, defitinion, scope)
@@ -358,7 +357,10 @@ def find_declarations(
         file.add_symbol(declaration)
         return [declaration]
 
-    elif node.type in ["function_definition", "function_declaration", "method_definition", "method"]:
+    elif\
+        (node.type in ["function_declaration", "method_definition"] and language in ["javascript", "tsx", "typescript"]) or\
+        (node.type in ["function_definition"] and language in ["python"]) or\
+        (node.type in ["method"] and language in ["ruby"]):
         id: Optional[Node] = None
         for child in node.children:
             if child.type in ["identifier", "property_identifier"]:
@@ -387,7 +389,7 @@ def find_declarations(
             file.add_symbol(declaration)
             return [declaration]
 
-    elif node.type in ["lexical_declaration", "variable_declaration"]:
+    elif node.type in ["lexical_declaration", "variable_declaration"] and language in ["javascript", "typescript", "tsx"]:
         # arrow functions in js/ts e.g. let foo = x => x+1
         for child in node.children:
             if child.type == "variable_declarator":
@@ -411,7 +413,7 @@ def find_declarations(
                 code=code, file=file, language=language, node=node.children[1], scope=scope
             )
 
-    elif node.type in ["interface_declaration", "type_alias_declaration"]:
+    elif node.type in ["interface_declaration", "type_alias_declaration"] and language in ["js", "typescript", "tsx"]:
         id: Optional[Node] = node.child_by_field_name("name")
         if id is not None:
             if node.type == "interface_declaration":
@@ -636,7 +638,7 @@ def find_declarations(
 def process_body(
     code: Code, file: File, language: Language, node: Node, scope: Scope
 ) -> List[Statement]:
-    statements = []
+    statements: List[Statement] = []
     for child in node.children:
         if language == "ruby" and child.text.decode() == "name":
             continue 
