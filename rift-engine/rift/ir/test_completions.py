@@ -13,7 +13,7 @@ def test_completions_file():
     with open(test_file, "r") as f:
         old_test_data = f.read()
 
-    project = test_parser.get_test_project()
+    project = test_parser.get_test_python_project()
     new_test_data = completions.get_symbol_completions(project)
 
     if new_test_data != old_test_data:
