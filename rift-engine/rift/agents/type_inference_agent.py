@@ -28,18 +28,18 @@ from rift.util.TextStream import TextStream
 
 
 @dataclass
-class MissingTypesParams(agent.AgentParams):
+class Params(agent.AgentParams):
     ...
 
 
 @dataclass
-class MissingTypesResult(agent.AgentRunResult):
+class Result(agent.AgentRunResult):
     ...
 
 
 @dataclass
-class MissingTypesAgentState(agent.AgentState):
-    params: MissingTypesParams
+class State(agent.AgentState):
+    params: Params
     messages: list[openai_types.Message]
     response_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
@@ -84,17 +84,6 @@ class MissingTypePrompt:
             bytes += mt.function_declaration.get_substring()
             bytes += b"\n"
         return IR.Code(bytes)
-
-    @staticmethod
-    def example_code_block() -> str:
-        return dedent(
-            """
-            ```python
-                def mul(a: t1, b : t2) -> t3
-                    ...
-            ```
-        """
-        ).lstrip()
 
     @staticmethod
     def create_prompt_for_file(language: IR.Language, missing_types: List[MissingType]) -> Prompt:
@@ -186,15 +175,15 @@ def get_num_missing_in_code(code: IR.Code, language: IR.Language) -> int:
 </svg>""",
 )
 @dataclass
-class MissingTypesAgent(agent.ThirdPartyAgent):
+class TypeInferenceAgent(agent.ThirdPartyAgent):
     agent_type: ClassVar[str] = "missing_types"
-    params_cls: ClassVar[Any] = MissingTypesParams
+    params_cls: ClassVar[Any] = Params
 
     debug = Config.debug
 
     @classmethod
     async def create(cls, params: Any, server: LspServer) -> Any:
-        state = MissingTypesAgentState(
+        state = State(
             params=params,
             messages=[],
         )
@@ -330,8 +319,8 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             )
         )
 
-    def get_state(self) -> MissingTypesAgentState:
-        if not isinstance(self.state, MissingTypesAgentState):
+    def get_state(self) -> State:
+        if not isinstance(self.state, State):
             raise Exception("Agent not initialized")
         return self.state
 
@@ -340,7 +329,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             raise Exception("Server not initialized")
         return self.server
 
-    async def run(self) -> MissingTypesResult:
+    async def run(self) -> Result:
         async def info_update(msg: str):
             logger.info(msg)
             await self.send_chat_update(msg)
@@ -397,7 +386,7 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
             file_processes.append(FileProcess(file_missing_types=fmt))
         if tot_num_missing == 0:
             await self.send_chat_update("No missing types found in the current file.")
-            return MissingTypesResult()
+            return Result()
         await self.send_chat_update(f"Missing {tot_num_missing} types in {files_missing_str}")
 
         tasks: List[asyncio.Task[Any]] = [
@@ -419,4 +408,4 @@ class MissingTypesAgent(agent.ThirdPartyAgent):
         await self.send_chat_update(
             f"Missing types after responses: {tot_new_missing}/{tot_num_missing} ({tot_new_missing/tot_num_missing*100:.2f}%)"
         )
-        return MissingTypesResult()
+        return Result()
