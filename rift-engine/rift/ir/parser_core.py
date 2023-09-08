@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, Tuple
 
 from rift.ir.IR import (
@@ -26,6 +27,7 @@ from rift.ir.IR import (
 )
 from tree_sitter import Node
 
+logger = logging.getLogger(__name__)
 
 def dump_node(node: Node) -> str:
     """ Dump a node for debugging purposes. """
@@ -69,7 +71,7 @@ def add_c_cpp_declarators_to_type(type: Type, declarators: List[str]) -> Type:
         elif d == "identifier":
             pass
         else:
-            raise Exception(f"Unknown declarator: {d}")
+            logger.warning(f"Unknown declarator: {d}")
     return t
 
 
@@ -89,9 +91,11 @@ def get_c_cpp_parameter(language: Language, node: Node) -> Parameter:
     declarators, final_node = extract_c_cpp_declarators(node)
     type_node = node.child_by_field_name("type")
     if type_node is None:
-        raise Exception(f"Could not find type node in {node}")
-    type = parse_type(language=language, node=type_node)
-    type = add_c_cpp_declarators_to_type(type, declarators)
+        logger.warning(f"Could not find type node in {node}")
+        type = Type("unknown")
+    else:
+        type = parse_type(language=language, node=type_node)
+        type = add_c_cpp_declarators_to_type(type, declarators)
     name = ""
     if final_node.type == "identifier":
         name = final_node.text.decode()
@@ -561,7 +565,7 @@ class DeclarationFinder:
                         name = nodes[0].text.decode()
                     parameters.append(Parameter(default_value=default_value, name=name, type=type))
                 else:
-                    raise Exception(f"Unexpected parameter type: {par.type}")
+                    logger.warning(f"Unexpected parameter type: {par.type}")
             def parse_res_parameters(exp: Node, parameters: List[Parameter]) -> None:
                 nonlocal return_type
                 if exp.type == "function":
@@ -652,7 +656,7 @@ class DeclarationFinder:
                     nodes = m1.children
                     return parse_module_binding(nodes)
                 else:
-                    raise Exception(f"Unexpected node type in module_declaration: {m1.type}")
+                    logger.warning(f"Unexpected node type in module_declaration: {m1.type}")
 
         # if not returned earlier
         return []
