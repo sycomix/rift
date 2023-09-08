@@ -288,7 +288,8 @@ export class MorphLanguageClient
                         recentlyOpenedFiles: [AtableFileFromUri(activeUri)],
                     },
                 }));
-                this.fetchSymbolsForRecentFiles([activeUri.fsPath]);
+                // TODO: turn this back on for symbol @-completion
+                // this.fetchSymbolsForRecentFiles([activeUri.fsPath]);
             }
             this.refreshNonGitIgnoredFiles();
             this.refreshAvailableAgents();
