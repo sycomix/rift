@@ -36,7 +36,7 @@ def lookup_match(match: str, server: "Server") -> str:
         symbol_ref = project.lookup_reference(reference_some_function)
         print ('The file', this_file, project, reference_some_function, symbol_ref)
         if symbol_ref is not None and symbol_ref.symbol is not None:
-            body = symbol_ref.symbol.get_substring_without_body().decode().strip()
+            body = symbol_ref.symbol.get_substring().decode().strip()
             logger.info(f"[lookup_match] symbol reference found")
             return body
 
