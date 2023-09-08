@@ -145,26 +145,27 @@ Class: B
 === Symbol Table for test.cpp ===
 Function: add
    language: cpp
-   range: ((2, 4), (2, 17))
-   substring: (32, 45)
+   range: ((2, 4), (2, 43))
+   substring: (32, 71)
    scope: namespace_name::
-   body: (43, 45)
+   body: (69, 71)
+   parameters: [someRef:int&, somePtr:int*]
    return_type: void
 Function: print
    language: cpp
    range: ((5, 12), (5, 25))
-   substring: (94, 107)
+   substring: (120, 133)
    scope: namespace_name::student.
    return_type: void
 Class: student
    language: cpp
    range: ((3, 4), (6, 5))
-   substring: (50, 113)
+   substring: (76, 139)
    scope: namespace_name::
 Namespace: namespace_name
    language: cpp
    range: ((0, 0), (7, 1))
-   substring: (0, 116)
+   substring: (0, 142)
 === Symbol Table for test.cs ===
 Function: sum
    language: c_sharp
@@ -435,7 +436,7 @@ File: test.py
       def nested():
 File: test.cpp
   namespace namespace_name
-    void add()
+    void add(int& someRef, int* somePtr)
     class student
       void print();
 File: test.cs

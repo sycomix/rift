@@ -117,7 +117,7 @@ class Tests:
             """
         namespace namespace_name 
         {
-            void add() {}
+            void add(int& someRef, int* somePtr) {}
             class student {
                 public:
                     void print();

@@ -64,6 +64,8 @@ def add_c_cpp_declarators_to_type(type: Type, declarators: List[str]) -> Type:
             t = t.create_array()
         elif d == "function_declarator":
             t = t.create_function()
+        elif d == "reference_declarator":
+            t = t.create_reference()
         elif d == "identifier":
             pass
         else:
@@ -74,7 +76,10 @@ def add_c_cpp_declarators_to_type(type: Type, declarators: List[str]) -> Type:
 def extract_c_cpp_declarators(node: Node) -> Tuple[List[str], Node]:
     declarator_node = node.child_by_field_name("declarator")
     if declarator_node is None:
-        return [], node
+        if node.type == "reference_declarator" and node.child_count >= 2:
+            return [], node.children[1]
+        else:
+            return [], node
     declarators, final_node = extract_c_cpp_declarators(declarator_node)
     declarators.append(declarator_node.type)
     return declarators, final_node

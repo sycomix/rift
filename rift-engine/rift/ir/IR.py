@@ -80,6 +80,9 @@ class Type:
     def create_function(self) -> "Type":
         return Type(f"{self._str}()")
     
+    def create_reference(self) -> "Type":
+        return Type(f"{self._str}&")
+    
     def create_type_of(self) -> "Type":
         return Type(f"typeof({self._str})")
 
