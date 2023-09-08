@@ -22,30 +22,6 @@ def parse_code_block(file: IR.File, code: IR.Code, language: IR.Language) -> Non
         statement = parser_core.process_statement(code=code, file=file, language=language, node=node, scope="")
         file.statements.append(statement)
 
-
-def parse_files_in_project(
-    root_path: str, filter: Optional[Callable[[str], bool]] = None
-) -> IR.Project:
-    """
-    Parses all files with known extensions in a directory and its subdirectories, starting from the provided root path.
-    Returns a Project instance containing all parsed files.
-    If a filter function is provided, it is used to decide which files should be included in the Project.
-    """
-    project = IR.Project(root_path=root_path)
-    for root, _dirs, files in os.walk(root_path):
-        for file in files:
-            language = IR.language_from_file_extension(file)
-            if language is not None:
-                full_path = os.path.join(root, file)
-                path_from_root = os.path.relpath(full_path, root_path)
-                if filter is None or filter(path_from_root):
-                    with open(os.path.join(root_path, full_path), "r", encoding="utf-8") as f:
-                        code = IR.Code(f.read().encode("utf-8"))
-                    file_ir = IR.File(path=path_from_root)
-                    parse_code_block(file=file_ir, code=code, language=language)
-                    project.add_file(file=file_ir)
-    return project
-
 def parse_path(path: str, project: IR.Project, filter_file: Optional[Callable[[str], bool]] = None) -> None:
     """
     Parses a single file and adds it to the provided Project instance.
@@ -72,11 +48,10 @@ def parse_files_in_paths(paths: List[str], filter_file: Optional[Callable[[str],
     project = IR.Project(root_path=root_path)
     for path in paths:
         if os.path.isfile(path):
-            print ("Path is file", path)
             parse_path(path, project, filter_file)
         else:
-            print ("Path is not a file", path)
-            for root, _dirs, files in os.walk(path):
+            for root, dirs, files in os.walk(path):
+                dirs[:] = [d for d in dirs if d != 'node_modules']
                 for file in files:
                     full_path = os.path.join(root, file)
                     parse_path(full_path, project, filter_file)

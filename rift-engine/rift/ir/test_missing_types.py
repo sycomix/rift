@@ -41,7 +41,7 @@ def test_missing_types():
 def test_missing_types_in_project():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(script_dir)
-    project = parser.parse_files_in_project(root_path=parent_dir)
+    project = parser.parse_files_in_paths([parent_dir])
     files_missing_types = files_missing_types_in_project(project)
     for fmt in files_missing_types:
         print(f"File: {fmt.file.path}")
