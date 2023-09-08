@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 import rift.ir.IR as IR
 import rift.ir.parser as parser
@@ -65,25 +65,15 @@ def replace_functions_in_document(
     ir_doc: IR.File,
     ir_blocks: IR.File,
     replace_body: bool,
-    update_imports: bool,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
-) -> List[IR.CodeEdit]:
+) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
     """
     Replaces functions in the document with corresponding functions from parsed blocks.
     """
-    function_declarations_in_document: List[
-        IR.ValueDeclaration
-    ] = ir_doc.get_function_declarations()
+    function_declarations_in_document: List[IR.ValueDeclaration] = ir_doc.get_function_declarations()
 
     code_edits: List[IR.CodeEdit] = []
-
-    typing_import : Optional[IR.Import] = None
-    typing_names: Set[str] = set() # current imports from "typing"
-    missing_typing_names: Set[str] = set() # names that need to be imported from "typing"
-    if update_imports:
-        typing_import = ir_doc.search_module_import("typing")
-        if typing_import is not None:
-            typing_names = set(typing_import.names)
+    updated_functions: List[IR.ValueDeclaration] = []
 
     for function_declaration in function_declarations_in_document:
         function_in_blocks_ = ir_blocks.search_symbol(function_declaration.name)
@@ -97,6 +87,7 @@ def replace_functions_in_document(
         else:
             filter = function_declaration.get_qualified_id() in filter_function_ids
         if filter and function_in_blocks is not None:
+            updated_functions.append(function_in_blocks)
             if replace_body:
                 substring = function_declaration.substring
                 new_bytes = function_in_blocks.get_substring()
@@ -115,47 +106,52 @@ def replace_functions_in_document(
                 new_bytes = new_function_text
             code_edit = IR.CodeEdit(substring=substring, new_bytes=new_bytes)
             code_edits.append(code_edit)
-            if update_imports and isinstance(function_in_blocks.value_kind, IR.FunctionKind):
-                fun_kind = function_in_blocks.value_kind
-                types_in_function = [p.type for p in fun_kind.parameters if p.type is not None]
-                if fun_kind.return_type is not None:
-                    types_in_function.append(fun_kind.return_type)
-                names_from_types = get_typing_names_from_types(types_in_function)
-                new_missing_names = names_from_types.difference(typing_names)
-                missing_typing_names = missing_typing_names.union(new_missing_names)
-    if missing_typing_names != set():
-        if typing_import is None:
-            # Add new import for all missing names at the top of the file
-            new_names = missing_typing_names
-            substring = (0, 0)
-        else:
-            # Add new names to existing import
-            new_names = typing_names.union(missing_typing_names)
-            substring = typing_import.substring
-        import_str = f"from typing import {', '.join(sorted(new_names))}\n"
-        code_edit = IR.CodeEdit(substring=substring, new_bytes=import_str.encode("utf-8"))
-        code_edits.append(code_edit)
-    return code_edits
+    return (code_edits, updated_functions)
 
+def update_typing_imports(code: IR.Code, language: IR.Language, updated_functions: List[IR.ValueDeclaration]) -> Optional[IR.CodeEdit]:
+    file = parse_code_blocks(code_blocks=[code], language=language)
+    typing_import = file.search_module_import("typing")
+    typing_names: Set[str] = set()
+    missing_names: Set[str] = set()
+    if typing_import is not None:
+        typing_names = set(typing_import.names)
+    for f in updated_functions:
+        if isinstance(f.value_kind, IR.FunctionKind):
+            fun_kind = f.value_kind
+            types_in_function = [p.type for p in fun_kind.parameters if p.type is not None]
+            if fun_kind.return_type is not None:
+                types_in_function.append(fun_kind.return_type)
+            names_from_types = get_typing_names_from_types(types_in_function)
+            new_missing_names = names_from_types.difference(typing_names)
+            missing_names = missing_names.union(new_missing_names)
+    if len(missing_names) > 0:
+        all_names = typing_names.union(missing_names)
+        import_str = f"from typing import {', '.join(sorted(all_names))}"
+        if typing_import is None:
+            substring = (0, 0)
+            import_str += "\n"
+        else:
+            substring = typing_import.substring
+        code_edit = IR.CodeEdit(substring=substring, new_bytes=import_str.encode("utf-8"))
+        return code_edit
 
 def replace_functions_from_code_blocks(
     code_blocks: List[IR.Code],
     document: IR.Code,
     language: IR.Language,
     replace_body: bool,
-    update_imports: bool = False,
     filter_function_ids: Optional[List[IR.QualifiedId]] = None,
-) -> List[IR.CodeEdit]:
+) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
     """
     Generates a new document by replacing functions in the original document with the corresponding functions
     from the code blocks.
     """
     ir_blocks = parse_code_blocks(code_blocks=code_blocks, language=language)
     ir_doc = parse_code_blocks(code_blocks=[document], language=language)
-    return replace_functions_in_document(
+    code_edits, updated_functions = replace_functions_in_document(
         filter_function_ids=filter_function_ids,
         ir_doc=ir_doc,
         ir_blocks=ir_blocks,
         replace_body=replace_body,
-        update_imports=update_imports,
     )
+    return code_edits, updated_functions

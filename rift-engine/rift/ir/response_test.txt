@@ -54,7 +54,6 @@ int main() {
 New document3:
 ```
 from typing import List, Tuple
-
 def foo() -> None:
     print("Hello world!")
 

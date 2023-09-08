@@ -157,14 +157,14 @@ def test_response():
     language: IR.Language = "c"
     code_blocks1 = response.extract_blocks_from_response(Test.response1)
     document1 = IR.Code(Test.document)
-    edits1 = response.replace_functions_from_code_blocks(
+    edits1, _ = response.replace_functions_from_code_blocks(
         code_blocks=code_blocks1, document=document1, language=language, replace_body=True
     )
     new_document1 = document1.apply_edits(edits1)
     new_test_output += f"\nNew document1:\n```\n{new_document1}```"
     code_blocks2 = response.extract_blocks_from_response(Test.response2)
     document2 = IR.Code(Test.document)
-    edits2 = response.replace_functions_from_code_blocks(
+    edits2, _ = response.replace_functions_from_code_blocks(
         code_blocks=code_blocks2, document=document2, language=language, replace_body=True
     )
     new_document2 = document2.apply_edits(edits2)
@@ -177,14 +177,17 @@ def test_response():
     missing_types = functions_missing_types_in_file(file)
     filter_function_ids = [mt.function_declaration.get_qualified_id() for mt in missing_types]
     document3 = IR.Code(Test.code3)
-    edits3 = response.replace_functions_from_code_blocks(
+    edits3, updated_functions = response.replace_functions_from_code_blocks(
         code_blocks=code_blocks3,
         document=document3,
         filter_function_ids=filter_function_ids,
         language=language,
         replace_body=False,
-        update_imports=True,
     )
+    edit_imports = response.update_typing_imports(code=document3, language=language, updated_functions=updated_functions)
+    if edit_imports is not None:
+        edits3.append(edit_imports)
+
     new_document3 = document3.apply_edits(edits3)
     new_test_output += f"\n\nNew document3:\n```\n{new_document3}```"
 

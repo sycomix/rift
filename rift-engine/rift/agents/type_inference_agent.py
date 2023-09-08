@@ -4,7 +4,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from textwrap import dedent
-from typing import Any, ClassVar, Coroutine, Dict, List, Optional, cast
+from typing import Any, ClassVar, Coroutine, Dict, List, Optional, Tuple, cast
 from urllib.parse import urlparse
 
 import openai
@@ -22,7 +22,8 @@ from rift.ir.missing_types import (
     files_missing_types_in_project,
     functions_missing_types_in_file,
 )
-from rift.ir.response import extract_blocks_from_response, replace_functions_from_code_blocks
+from rift.ir.response import extract_blocks_from_response, replace_functions_from_code_blocks, update_typing_imports
+
 from rift.lsp import LspServer
 from rift.util.TextStream import TextStream
 
@@ -141,6 +142,7 @@ class MissingTypePrompt:
 class FileProcess:
     file_missing_types: FileMissingTypes
     edits: List[IR.CodeEdit] = field(default_factory=list)
+    updated_functions: List[IR.ValueDeclaration] = field(default_factory=list)
     file_change: Optional[file_diff.FileChange] = None
     new_num_missing: Optional[int] = None
 
@@ -200,26 +202,24 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         language: IR.Language,
         missing_types: List[MissingType],
         response: str,
-    ) -> List[IR.CodeEdit]:
+    ) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
         if self.debug:
             logger.info(f"response:\n{response}\n")
         code_blocks = extract_blocks_from_response(response)
         if self.debug:
             logger.info(f"code_blocks:\n{code_blocks}\n")
         filter_function_ids = [mt.function_declaration.get_qualified_id() for mt in missing_types]
-        edits = replace_functions_from_code_blocks(
+        return replace_functions_from_code_blocks(
             code_blocks=code_blocks,
             document=document,
             filter_function_ids=filter_function_ids,
             language=language,
             replace_body=False,
-            update_imports=True,
         )
-        return edits
 
     async def code_edits_for_missing_files(
         self, document: IR.Code, language: IR.Language, missing_types: List[MissingType]
-    ) -> List[IR.CodeEdit]:
+    ) -> Tuple[List[IR.CodeEdit], List[IR.ValueDeclaration]]:
         prompt = MissingTypePrompt.create_prompt_for_file(
             language=language, missing_types=missing_types
         )
@@ -249,10 +249,9 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
 
         await self.send_chat_update(response_stream)
         response = "".join(collected_messages)
-        edits = self.process_response(
+        return self.process_response(
             document=document, language=language, missing_types=missing_types, response=response
         )
-        return edits
 
     def split_missing_types_in_groups(
         self, missing_types: List[MissingType]
@@ -285,8 +284,13 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         groups_of_missing_types = self.split_missing_types_in_groups(fmt.missing_types)
 
         for missing_types in groups_of_missing_types:
-            new_edits = await self.code_edits_for_missing_files(document, language, missing_types)
+            new_edits, updated_functions = await self.code_edits_for_missing_files(document, language, missing_types)
             file_process.edits += new_edits
+            file_process.updated_functions += updated_functions
+        edit_imports = update_typing_imports(
+            code=document, language=language, updated_functions=file_process.updated_functions)
+        if edit_imports is not None:
+            file_process.edits.append(edit_imports)
         new_document = fmt.code.apply_edits(file_process.edits)
         old_num_missing = count_missing(file_process.file_missing_types.missing_types)
         new_num_missing = get_num_missing_in_code(new_document, fmt.language)
