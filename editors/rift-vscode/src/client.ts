@@ -288,8 +288,7 @@ export class MorphLanguageClient
                         recentlyOpenedFiles: [AtableFileFromUri(activeUri)],
                     },
                 }));
-                // TODO: turn this back on for symbol @-completion
-                // this.fetchSymbolsForRecentFiles([activeUri.fsPath]);
+                this.fetchSymbolsForRecentFiles([activeUri.fsPath]);
             }
             this.refreshNonGitIgnoredFiles();
             this.refreshAvailableAgents();
@@ -872,34 +871,35 @@ export class MorphLanguageClient
     }
 
     private async fetchSymbolsForRecentFiles(recentlyOpenedFiles: string[]) {
-        try {
-            const parsedSymbols = await this.client?.sendRequest<{
-                symbols: AgentSymbols;
-                project_root: string;
-            }>("morph/parseSymbolsFromFiles", recentlyOpenedFiles);
-            console.log("got parsed symbols for files", {
-                recentlyOpenedFiles,
-                parsedSymbols,
-            });
-            if (parsedSymbols) {
-                const newSymbols = parsedSymbols.symbols.flatMap((symbolFile) => symbolFile.symbols.map((symbol) => {
-                    const uri = vscode.Uri.file(
-                        parsedSymbols.project_root + "/" + symbolFile.path
-                    ).with({ fragment: symbol.scope + symbol.name });
-                    return AtableFileFromUri(uri);
-                })
-                );
-                this.webviewState.update((pS) => ({
-                    ...pS,
-                    symbols: newSymbols,
-                }));
-            }
-        } catch (e) {
-            console.error("error getting symbols from files", {
-                e,
-                recentlyOpenedFiles,
-            });
-        }
+        // TODO: turn this back on for symbol @-completion
+        // try {
+        //     const parsedSymbols = await this.client?.sendRequest<{
+        //         symbols: AgentSymbols;
+        //         project_root: string;
+        //     }>("morph/parseSymbolsFromFiles", recentlyOpenedFiles);
+        //     console.log("got parsed symbols for files", {
+        //         recentlyOpenedFiles,
+        //         parsedSymbols,
+        //     });
+        //     if (parsedSymbols) {
+        //         const newSymbols = parsedSymbols.symbols.flatMap((symbolFile) => symbolFile.symbols.map((symbol) => {
+        //             const uri = vscode.Uri.file(
+        //                 parsedSymbols.project_root + "/" + symbolFile.path
+        //             ).with({ fragment: symbol.scope + symbol.name });
+        //             return AtableFileFromUri(uri);
+        //         })
+        //         );
+        //         this.webviewState.update((pS) => ({
+        //             ...pS,
+        //             symbols: newSymbols,
+        //         }));
+        //     }
+        // } catch (e) {
+        //     console.error("error getting symbols from files", {
+        //         e,
+        //         recentlyOpenedFiles,
+        //     });
+        // }
     }
 
     focusOmnibar() {
