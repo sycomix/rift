@@ -1,0 +1,112 @@
+[
+    {
+        "path": "test.py",
+        "symbols": [
+            {
+                "name": "py",
+                "scope": "A.",
+                "kind": "Function",
+                "range": [
+                    [
+                        6,
+                        4
+                    ],
+                    [
+                        8,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "A",
+                "scope": "",
+                "kind": "Class",
+                "range": [
+                    [
+                        0,
+                        0
+                    ],
+                    [
+                        8,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "insert_code",
+                "scope": "B.",
+                "kind": "Function",
+                "range": [
+                    [
+                        11,
+                        4
+                    ],
+                    [
+                        14,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "load",
+                "scope": "B.",
+                "kind": "Function",
+                "range": [
+                    [
+                        15,
+                        4
+                    ],
+                    [
+                        16,
+                        12
+                    ]
+                ]
+            },
+            {
+                "name": "nested",
+                "scope": "B.Nested.",
+                "kind": "Function",
+                "range": [
+                    [
+                        18,
+                        8
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "Nested",
+                "scope": "B.",
+                "kind": "Class",
+                "range": [
+                    [
+                        17,
+                        4
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            },
+            {
+                "name": "B",
+                "scope": "",
+                "kind": "Class",
+                "range": [
+                    [
+                        9,
+                        0
+                    ],
+                    [
+                        19,
+                        16
+                    ]
+                ]
+            }
+        ]
+    }
+]

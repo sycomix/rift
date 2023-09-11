@@ -11,28 +11,37 @@
   import type { Transaction } from "@tiptap/pm/state"
   import type { SuggestionOptions } from "@tiptap/suggestion"
   import { FileChip } from "./FileChip"
+    import AtIconSvg from "./icons/AtIconSvg.svelte";
 
 
-const suggestion:Omit<SuggestionOptions<AtableFile>, 'editor'> = {
+  const suggestion:Omit<SuggestionOptions<AtableFile>, 'editor'> = {
   items: ({ query }) => {
-        const filteredFiles = Array.from(
-          new Set([...$state.files.recentlyOpenedFiles, ...$state.files.nonGitIgnoredFiles])
-        )
-        console.log('filteredFiles1')
-        console.log(filteredFiles)
-        const filteredfiles2 = filteredFiles.filter((file) => {
-        let searchString = query.toLowerCase()
-        // return true
-        return (
-          file.fileName.toLowerCase().includes(searchString) ||
-          file.fromWorkspacePath.toLowerCase().includes(searchString)
-        )
-      })
-      .slice(0, 4)
-      console.log('new filtered files2:', filteredfiles2)
-      return filteredfiles2
+            const allFiles = Array.from(
+                new Set([
+                    ...$state.symbols,
+                    ...$state.files.recentlyOpenedFiles,
+                    ...$state.files.nonGitIgnoredFiles,
+                ])
+            );
+            const seen = new Set<string>()
+            const filteredFiles = allFiles
+                .filter((file) => {
+                    const needle = query.toLowerCase();
+                    const haystack = (
+                        file.fromWorkspacePath +
+                        "/" +
+                        file.fileName +
+                        "@" +
+                        file.symbolName
+                    ).toLowerCase();
+                    if (seen.has(haystack)) return false;
+                    seen.add(haystack);
+                    return haystack.includes(needle);
+                })
+                .slice(0, 50);
+            console.log({allFiles, filteredFiles});
+            return filteredFiles;
   },
-
   render: () => {
     return {
       onStart: (props) => {
@@ -212,7 +221,8 @@ const suggestion:Omit<SuggestionOptions<AtableFile>, 'editor'> = {
     if (e.code === "Enter" && $dropdownStatus != "none") event.preventDefault()
   }
 
-  let editor: Editor | undefined
+let editor: Editor | undefined
+
   onMount(() => {
     editor = new Editor({
       element: _container,
@@ -262,7 +272,15 @@ const suggestion:Omit<SuggestionOptions<AtableFile>, 'editor'> = {
   }
 </script>
 
-<div class="p-2 border-t border-b border-[var(--vscode-input-background)] w-full relative">
+<div class="p-2 border-t border-b border-[var(--vscode-input-background)] w-full relative flex flex-row">
+  <div class="justify-self-end flex mr-1">
+    <button on:click={() => editor?.chain().focus().insertContent('@').run()}
+      class="items-center flex"
+      title="Add reference to file or symbol"
+      >
+      <AtIconSvg />
+    </button>
+  </div>
   <div
     class={`w-full text-md p-2 bg-[var(--vscode-input-background)] rounded-md flex flex-row items-center border ${
       isFocused ? "border-[var(--vscode-focusBorder)]" : "border-transparent"

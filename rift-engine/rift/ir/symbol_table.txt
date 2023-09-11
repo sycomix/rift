@@ -1,0 +1,484 @@
+=== Symbol Table for test.c ===
+Function: aa
+   language: c
+   range: ((0, 0), (2, 1))
+   substring: (0, 24)
+   body: (9, 24)
+   return_type: int
+Function: foo
+   language: c
+   range: ((4, 0), (6, 1))
+   substring: (52, 84)
+   docstring: /** This is a docstring */
+   body: (71, 84)
+   parameters: [x:int**]
+   return_type: int*
+Function: bb
+   language: c
+   range: ((8, 0), (10, 1))
+   substring: (86, 110)
+   body: (95, 110)
+   return_type: int
+Function: main
+   language: c
+   range: ((12, 0), (17, 1))
+   substring: (112, 169)
+   body: (123, 169)
+   return_type: int
+=== Symbol Table for test.js ===
+Function: f1
+   language: javascript
+   range: ((1, 0), (1, 27))
+   substring: (22, 49)
+   docstring: /** Some docstring */
+   body: (36, 49)
+   has_return: True
+Function: f2
+   language: javascript
+   range: ((3, 0), (3, 18))
+   substring: (93, 111)
+   docstring: /** Some docstring on an arrow function */
+=== Symbol Table for test.ts ===
+Type: a
+   language: typescript
+   range: ((0, 0), (0, 24))
+   substring: (0, 24)
+Function: ts
+   language: typescript
+   range: ((1, 0), (1, 56))
+   substring: (25, 81)
+   body: (69, 81)
+   parameters: [x:number, opt?:string]
+   return_type: number
+   has_return: True
+Function: ts2
+   language: typescript
+   range: ((2, 7), (2, 51))
+   substring: (89, 133)
+   exported: True
+   body: (120, 133)
+   return_type: array<number>
+   has_return: True
+Function: constructor
+   language: typescript
+   range: ((4, 4), (4, 20))
+   substring: (155, 171)
+   scope: A.
+   body: (169, 171)
+Function: load
+   language: typescript
+   range: ((5, 4), (7, 5))
+   substring: (176, 222)
+   scope: A.
+   body: (198, 222)
+   parameters: [v:number]
+   has_return: True
+Class: A
+   language: typescript
+   range: ((3, 7), (8, 1))
+   substring: (141, 224)
+   exported: True
+Interface: RunHelperSyncResult
+   language: typescript
+   range: ((9, 0), (12, 1))
+   substring: (225, 290)
+   body: (255, 290)
+Type: HelperStatus
+   language: typescript
+   range: ((13, 0), (13, 74))
+   substring: (291, 365)
+=== Symbol Table for test.tsx ===
+Function: tsx
+   language: tsx
+   range: ((1, 0), (1, 27))
+   substring: (23, 50)
+   body: (38, 50)
+   has_return: True
+=== Symbol Table for test.py ===
+Function: py
+   language: python
+   range: ((6, 4), (8, 16))
+   substring: (75, 139)
+   scope: A.
+   docstring: """This is a docstring"""
+   body: (97, 139)
+   parameters: [x, y]
+   has_return: True
+Class: A(C,D)
+   language: python
+   range: ((0, 0), (8, 16))
+   substring: (0, 139)
+   docstring: """
+    This is a docstring
+    for class A
+    """
+Function: insert_code
+   language: python
+   range: ((11, 4), (14, 12))
+   substring: (173, 311)
+   scope: B.
+   body: (307, 311)
+   parameters: [self, document:str, cursor_offset:int]
+   return_type: InsertCodeResult
+Function: load
+   language: python
+   range: ((15, 4), (16, 12))
+   substring: (316, 353)
+   scope: B.
+   body: (349, 353)
+   parameters: [self, v]
+Function: nested
+   language: python
+   range: ((18, 8), (19, 16))
+   substring: (380, 410)
+   scope: B.Nested.
+   body: (406, 410)
+Class: Nested
+   language: python
+   range: ((17, 4), (19, 16))
+   substring: (358, 410)
+   scope: B.
+Class: B
+   language: python
+   range: ((9, 0), (19, 16))
+   substring: (140, 410)
+=== Symbol Table for test.cpp ===
+Function: add
+   language: cpp
+   range: ((2, 4), (2, 43))
+   substring: (32, 71)
+   scope: namespace_name::
+   body: (69, 71)
+   parameters: [someRef:int&, somePtr:int*]
+   return_type: void
+Function: print
+   language: cpp
+   range: ((5, 12), (5, 25))
+   substring: (120, 133)
+   scope: namespace_name::student.
+   return_type: void
+Class: student
+   language: cpp
+   range: ((3, 4), (6, 5))
+   substring: (76, 139)
+   scope: namespace_name::
+Namespace: namespace_name
+   language: cpp
+   range: ((0, 0), (7, 1))
+   substring: (0, 142)
+=== Symbol Table for test.cs ===
+Function: sum
+   language: c_sharp
+   range: ((6, 8), (10, 9))
+   substring: (110, 214)
+   scope: SampleNamespace::SampleClass.
+   body: (149, 214)
+   return_type: int
+   has_return: True
+Class: SampleClass
+   language: c_sharp
+   range: ((4, 4), (11, 5))
+   substring: (78, 220)
+   scope: SampleNamespace::
+   docstring: // This is docstring
+Namespace: SampleNamespace
+   language: c_sharp
+   range: ((1, 0), (12, 1))
+   substring: (21, 222)
+   docstring: // This is docstring
+Interface: IEquatable
+   language: c_sharp
+   range: ((14, 0), (17, 1))
+   substring: (224, 275)
+   body: (248, 275)
+=== Symbol Table for test.ml ===
+Function: divide
+   language: ocaml
+   range: ((0, 0), (0, 28))
+   substring: (0, 28)
+   body: (21, 28)
+   parameters: [x:int, y]
+Function: callback
+   language: ocaml
+   range: ((1, 0), (1, 27))
+   substring: (29, 56)
+   body: (52, 56)
+   parameters: [():unit]
+   return_type: unit
+Function: bump
+   language: ocaml
+   range: ((3, 4), (3, 37))
+   substring: (79, 112)
+   scope: M.
+   body: (102, 112)
+   parameters: [?step:typeof(1), x]
+Function: hline
+   language: ocaml
+   range: ((4, 4), (4, 42))
+   substring: (117, 155)
+   scope: M.
+   body: (142, 155)
+   parameters: [~x, ~x, ~y]
+Module: M
+   language: ocaml
+   range: ((2, 0), (5, 3))
+   substring: (57, 159)
+Function: with_named_args
+   language: ocaml
+   range: ((7, 4), (7, 81))
+   substring: (182, 259)
+   scope: N.
+   body: (234, 259)
+   parameters: [~named_arg1:int, ?named_arg2]
+Function: f1
+   language: ocaml
+   range: ((9, 4), (9, 34))
+   substring: (265, 295)
+   scope: N.
+   body: (290, 295)
+   parameters: [x:int, x:int]
+   return_type: int
+Function: f2
+   language: ocaml
+   range: ((10, 4), (10, 30))
+   substring: (300, 326)
+   scope: N.
+   body: (321, 326)
+   parameters: [x:int, x:int]
+   return_type: int
+Value: v1
+   language: ocaml
+   range: ((12, 4), (12, 14))
+   substring: (332, 342)
+   scope: N.
+   body: (339, 342)
+Value: v2
+   language: ocaml
+   range: ((13, 4), (13, 18))
+   substring: (347, 361)
+   scope: N.
+   body: (358, 361)
+   type: int
+Module: N
+   language: ocaml
+   range: ((6, 0), (14, 3))
+   substring: (160, 365)
+=== Symbol Table for test.res ===
+Value: z0
+   language: rescript
+   range: ((0, 0), (0, 12))
+   substring: (0, 12)
+   body: (9, 12)
+Value: z1
+   language: rescript
+   range: ((1, 0), (1, 14))
+   substring: (13, 27)
+   body: (24, 27)
+   type: int
+Value: z2
+   language: rescript
+   range: ((2, 0), (2, 16))
+   substring: (28, 44)
+   body: (41, 44)
+   type: int
+Value: z
+   language: rescript
+   range: ((3, 0), (3, 15))
+   substring: (45, 60)
+   body: (57, 60)
+Value: zz
+   language: rescript
+   range: ((4, 0), (4, 22))
+   substring: (61, 83)
+   body: (80, 83)
+Value: zzz
+   language: rescript
+   range: ((5, 0), (5, 25))
+   substring: (84, 109)
+   body: (106, 109)
+Function: mulWithDefault
+   language: rescript
+   range: ((7, 0), (12, 1))
+   substring: (111, 211)
+   body: (150, 211)
+   parameters: [~def:int, x, y]
+Function: annot
+   language: rescript
+   range: ((15, 2), (15, 34))
+   substring: (239, 271)
+   scope: SomeRSModule.
+   body: (265, 271)
+   parameters: [x:int]
+   return_type: int
+Function: paramsWithDefault
+   language: rescript
+   range: ((16, 2), (16, 79))
+   substring: (274, 351)
+   scope: SomeRSModule.
+   body: (347, 351)
+   parameters: [~x:int=3, ~y=4.0, ~z:option<int>=?, ~w=?, ()]
+Module: SomeRSModule
+   language: rescript
+   range: ((14, 0), (17, 1))
+   substring: (213, 353)
+Function: multiple
+   language: rescript
+   range: ((19, 0), (19, 56))
+   substring: (355, 411)
+   body: (395, 411)
+   parameters: [x:int, y:int]
+   return_type: int
+Function: bindings
+   language: rescript
+   range: ((20, 0), (20, 40))
+   substring: (412, 452)
+   body: (435, 452)
+   parameters: [z:int]
+   return_type: int
+=== Symbol Table for test.rb ===
+Function: sum
+   language: ruby
+   range: ((0, 0), (3, 11))
+   substring: (0, 77)
+   body: (26, 77)
+   parameters: [a, b]
+Function: output
+   language: ruby
+   range: ((5, 8), (7, 11))
+   substring: (87, 134)
+   body: (110, 134)
+Function: greetings
+   language: ruby
+   range: ((9, 8), (13, 11))
+   substring: (144, 220)
+   body: (164, 220)
+   parameters: [a]
+Function: swap
+   language: ruby
+   range: ((15, 8), (20, 11))
+   substring: (230, 340)
+   body: (257, 340)
+   parameters: [a, b]
+Function: initialize
+   language: ruby
+   range: ((26, 12), (29, 15))
+   substring: (461, 558)
+   scope: Person::
+   body: (503, 558)
+   parameters: [name, age]
+Function: introduce
+   language: ruby
+   range: ((31, 12), (33, 15))
+   substring: (572, 668)
+   scope: Person::
+   body: (602, 668)
+Class: Person
+   language: ruby
+   range: ((23, 8), (34, 11))
+   substring: (397, 680)
+   docstring: # This is a docstring for class Person
+Function: cream?
+   language: ruby
+   range: ((37, 12), (39, 15))
+   substring: (715, 762)
+   scope: Cream::
+   body: (742, 762)
+Module: Cream
+   language: ruby
+   range: ((36, 8), (40, 11))
+   substring: (690, 774)
+Function: pour
+   language: ruby
+   range: ((44, 16), (48, 19))
+   substring: (833, 987)
+   scope: Foo::Bar::
+   body: (881, 987)
+   parameters: [container, liquid]
+Class: Bar
+   language: ruby
+   range: ((43, 12), (49, 15))
+   substring: (807, 1003)
+   scope: Foo::
+Module: Foo
+   language: ruby
+   range: ((42, 8), (50, 11))
+   substring: (784, 1015)
+
+=== Project Map ===
+File: test.c
+  int aa()
+  int * foo(int **x)
+  int bb()
+  int main()
+File: test.js
+  function f1()
+  let f2 = x => x+1;
+File: test.ts
+  type a = readonly b[][];
+  function ts(x:number, opt?:string) : number
+  function ts2() : array<number>
+  class A
+    constructor()
+    async load(v: number)
+  interface RunHelperSyncResult
+  type HelperStatus = 'running' | 'done' | 'error' | 'accepted' | 'rejected'
+File: test.tsx
+  function tsx()
+File: test.py
+  class A(C,D):
+    def py(x, y):
+  class B:
+    async def insert_code(
+            self, document: str, cursor_offset: int, goal: Optional[str] = None
+        ) -> InsertCodeResult:
+    async def load(self, v):
+    class Nested:
+      def nested():
+File: test.cpp
+  namespace namespace_name
+    void add(int& someRef, int* somePtr)
+    class student
+      void print();
+File: test.cs
+  namespace SampleNamespace
+    class SampleClass
+      public int sum(int a, int b)
+  interface IEquatable<T>
+File: test.ml
+  let divide (x:int) y
+  let callback () : unit
+  module M
+    let bump ?(step = 1) x
+    let hline ~x:x1 ~x:x2 ~y
+  module N
+    let with_named_args ~(named_arg1 : int) ?named_arg2
+    let rec f1 (x:int) : int
+    and f2 (x:int) : int
+    let v1
+    let v2:int
+File: test.res
+  let (z0)
+  let z1:int
+  let (z2:int)
+  let z3 as z
+  let (z4:int) as zz
+  let ((z5:int) as zzz)
+  let mulWithDefault = (~def: int, x, y)
+  module SomeRSModule
+    let annot = (x:int) : int
+    let paramsWithDefault = (~x: int=3, ~y=4.0, ~z: option<int>=?, ~w=?, ())
+  let rec multiple = (x:int, y:int) : int
+  and bindings = (z:int)
+File: test.rb
+  def sum(a, b)
+  def output
+  def greetings(a)
+  def swap(a, b)
+  class Person
+    def initialize(name, age)
+    def introduce
+  module Cream
+    def cream?
+  module Foo
+    class Bar
+      def pour(container, liquid)

@@ -28,13 +28,12 @@ from dataclasses import dataclass, field
 from pathlib import PurePath
 from typing import Any, ClassVar, List, Optional
 
-from rich.text import Text
-
 import rift.agents.abstract as agent
 import rift.agents.registry as registry
 import rift.llm.openai_types as openai
 import rift.lsp.types as lsp
 import rift.util.file_diff as file_diff
+from rich.text import Text
 from rift.util.TextStream import TextStream
 
 logger = logging.getLogger(__name__)
@@ -170,9 +169,12 @@ class Aider(agent.ThirdPartyAgent):
                 )
 
                 def refactor_uri_match(resp):
-                    pattern = f"\[uri\]\({self.state.params.workspaceFolderPath}/(\S+)\)"
-                    replacement = r"`\1`"
-                    resp = re.sub(pattern, replacement, resp)
+                    def process_path(path):
+                        relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
+                        if not resp.startswith("/add"): # /add does not like a quoted path
+                            relative_path = f"`{relative_path}`"
+                        return relative_path
+                    resp = re.sub(f"\[uri\]\((\S+)\)", lambda m: process_path(m.group(1)), resp)
                     return resp
 
                 try:

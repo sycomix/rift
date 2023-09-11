@@ -66,6 +66,7 @@ export type WebviewState = {
     recentlyOpenedFiles: AtableFile[];
     nonGitIgnoredFiles: AtableFile[];
   };
+  symbols: AtableFile[];
 };
 
 export const DEFAULT_STATE: WebviewState = {
@@ -84,12 +85,15 @@ export const DEFAULT_STATE: WebviewState = {
     recentlyOpenedFiles: [],
     nonGitIgnoredFiles: [],
   },
+  symbols: [],
 };
 
 export type OptionalTextDocument = {
   uri: string;
   version: number;
 } | null;
+
+export type EditorMetadata = { selection: vscode.Selection | null, position: vscode.Position | null, textDocument: OptionalTextDocument };
 
 export interface AgentParams {
   agent_type: string;
@@ -98,6 +102,7 @@ export interface AgentParams {
   selection: vscode.Selection | null;
   textDocument: OptionalTextDocument;
   workspaceFolderPath: string | null;
+  visibleEditorMetadata: EditorMetadata[];
 }
 
 export interface RunChatParams {
@@ -191,11 +196,21 @@ export type AgentResult = {
   id: string;
   type: string;
 }; //is just an ID rn
+export type AgentSymbols = {
+  path: string;
+  symbols: {
+    name: string;
+    scope: string;
+    kind: string;
+    range: [[number, number], [number, number]];
+  }[];
+}[];
 
 export interface AtableFile {
   fileName: string; //example.ts
   fullPath: string; //Users/brent/dev/project/src/example.ts
   fromWorkspacePath: string; //project/src/example.ts
+  symbolName?: string; // MainNamespace.SomeClass.someMethod
 }
 
 export interface AtableFileWithCommand extends AtableFile {

@@ -28,7 +28,9 @@ dependencies = [
   "transformers",
   "diff_match_patch",
   "art",
-  "gpt-engineer @ git+https://www.github.com/morph-labs/gpt-engineer",
+  "tree_sitter",
+  "tree_sitter_languages",
+  "gpt-engineer @ git+https://github.com/morph-labs/gpt-engineer",
   "aider-chat @ git+https://github.com/morph-labs/aider",
   "smol_dev @ git+https://github.com/morph-labs/smol_dev",
   "mentat-ai @ git+https://www.github.com/morph-labs/mentat",  
@@ -52,6 +54,11 @@ gpt-engineer = [
 aider = [
   "aider-chat @ git+https://github.com/morph-labs/aider"
 ]
+
+mentat = [
+  "mentat-ai @ git+https://www.github.com/morph-labs/mentat"
+]
+
 
 [project.urls]
 Documentation = "https://github.com/morph-labs/rift#readme"
