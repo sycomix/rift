@@ -169,9 +169,12 @@ class Aider(agent.ThirdPartyAgent):
                 )
 
                 def refactor_uri_match(resp):
-                    pattern = f"\[uri\]\({self.state.params.workspaceFolderPath}/(\S+)\)"
-                    replacement = r"`\1`" if not resp.startswith("/add") else r"\1"
-                    resp = re.sub(pattern, replacement, resp)
+                    def process_path(path):
+                        relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
+                        if not resp.startswith("/add"): # /add does not like a quoted path
+                            relative_path = f"`{relative_path}`"
+                        return relative_path
+                    resp = re.sub(f"\[uri\]\((\S+)\)", lambda m: process_path(m.group(1)), resp)
                     return resp
 
                 try:
