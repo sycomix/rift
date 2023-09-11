@@ -370,6 +370,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         if user_response is None:
             user_uris = []
         else:
+            self.get_state().messages.append(openai_types.Message.user(user_response))
             user_uris = re.findall(r"\[uri\]\((\S+)\)", user_response)
         if user_uris == []:
             user_uris = [current_file_uri]
