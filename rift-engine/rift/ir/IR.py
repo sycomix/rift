@@ -454,8 +454,8 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         return "ocaml"
     elif file_path.endswith(".py"):
         return "python"
-    elif file_path.endswith(".res"):
-        return "rescript"
+    # elif file_path.endswith(".res"):
+    #     return "rescript"
     elif file_path.endswith(".ts"):
         return "typescript"
     elif file_path.endswith(".tsx"):
