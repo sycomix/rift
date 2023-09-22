@@ -10,16 +10,18 @@ from typing import ClassVar, List, Optional, Type
 logger = logging.getLogger(__name__)
 
 import mentat.app
-import rift.agents.abstract as agent
-import rift.llm.openai_types as openai
-import rift.lsp.types as lsp
-import rift.util.file_diff as file_diff
 from mentat.app import get_user_feedback_on_changes
 from mentat.code_file_manager import CodeFileManager
 from mentat.config_manager import ConfigManager
 from mentat.conversation import Conversation
 from mentat.llm_api import CostTracker
 from mentat.user_input_manager import UserInputManager
+
+import rift.agents.abstract as agent
+import rift.ir.IR as IR
+import rift.llm.openai_types as openai
+import rift.lsp.types as lsp
+import rift.util.file_diff as file_diff
 from rift.util.TextStream import TextStream
 
 
@@ -59,6 +61,12 @@ class Mentat(agent.ThirdPartyAgent):
 
     @classmethod
     async def create(cls, params: MentatAgentParams, server):
+        """
+        Create a new Mentat agent instance with the given parameters and server.
+        :param params: The MentatAgentParams containing agent configuration.
+        :param server: The server instance.
+        :return: A new Mentat agent instance.
+        """        
         logger.info(f"{params=}")
         state = MentatAgentState(
             params=params,
@@ -82,7 +90,6 @@ class Mentat(agent.ThirdPartyAgent):
         )
 
     async def _run_chat_thread(self, response_stream):
-
         before, after = response_stream.split_once("感")
         try:
             async with self.state.response_lock:
@@ -95,6 +102,9 @@ class Mentat(agent.ThirdPartyAgent):
             logger.info(f"[_run_chat_thread] caught exception={e}, exiting")
 
     async def run(self) -> MentatRunResult:
+        """
+        This is the main method of the Mentat agent. It starts the chat thread and handles the main loop of the agent.
+        """
         response_stream = TextStream()
 
         run_chat_thread_task = asyncio.create_task(self._run_chat_thread(response_stream))
@@ -126,14 +136,38 @@ class Mentat(agent.ThirdPartyAgent):
                     agent.RequestChatRequest(messages=self.state.messages)
                 )
 
-                def refactor_uri_match(resp):
-                    pattern = f"\[uri\]\({self.state.params.workspaceFolderPath}/(\S+)\)"
-                    replacement = r"`\1`"
-                    resp = re.sub(pattern, replacement, resp)
+                dropped_symbols = False
+
+                def refactor_uri_match(resp: str):
+                    uri_pattern = r"\[uri\]\((\S+)\)"
+
+                    def replacement(m: re.Match[str]):
+                        parsed_uri = m.group(1)
+                        if "#" in uri:
+                            nonlocal dropped_symbols
+                            dropped_symbols = True
+                            uri, symbol = parsed_uri.split("#")[0], parsed_uri.split("#")[1]
+                        else:
+                            uri = parsed_uri
+
+                        reference = IR.Reference.from_uri(uri)
+                        file_path = reference.file_path
+                        relative_path = os.path.relpath(
+                            file_path, self.state.params.workspaceFolderPath
+                        )
+                        return f"`{relative_path}`" if not dropped_symbols else f"{symbol} @ `{relative_path}`"
+
+                    resp = re.sub(uri_pattern, replacement, resp)
                     return resp
 
                 try:
                     resp = refactor_uri_match(resp)
+
+                    if dropped_symbols:
+                        # await self.send_update(
+                        #     "This agent does not support symbol references. A plain file reference will be used instead."
+                        # )
+                        pass
                 except:
                     pass
                 self.state.messages.append(openai.Message.user(content=resp))
@@ -215,7 +249,13 @@ class Mentat(agent.ThirdPartyAgent):
         mentat.code_file_manager.CodeFileManager.write_changes_to_files = write_changes_to_files
         # mentat.parsing.change_delimiter = ("yeehaw" * 10)
 
+        dropped_symbols = False
+
         def extract_path(uri: str):
+            if "#" in uri:
+                nonlocal dropped_symbols
+                dropped_symbols = True
+                uri = uri.split("#")[0]
             if uri.startswith("file://"):
                 return uri[7:]
             if uri.startswith("uri://"):
@@ -230,24 +270,35 @@ class Mentat(agent.ThirdPartyAgent):
 
         paths: List[str] = []
 
-        self.state.messages.append(openai.Message.assistant(content="Which files should be visible to me for this conversation? (You can @-mention as many files as you want.)"))
+        self.state.messages.append(
+            openai.Message.assistant(
+                content="Which files should be visible to me for this conversation? (You can @-mention as many files as you want.)"
+            )
+        )
 
         # Add a new task to request the user for the file names that should be visible
         get_repo_context_t = self.add_task(
-            "get_repo_context",
-            self.request_chat,
-            [agent.RequestChatRequest(self.state.messages)]
+            "get_repo_context", self.request_chat, [agent.RequestChatRequest(self.state.messages)]
         )
-        
+
         # Wait for the user's response
         user_visible_files_response = await get_repo_context_t.run()
         self.state.messages.append(openai.Message.user(content=user_visible_files_response))
         await self.send_progress()
-        
+
         # Return the response from the user
         from rift.util.context import resolve_inline_uris
-        uris: List[str] = [extract_path(x.uri) for x in resolve_inline_uris(user_visible_files_response, server=self.server)]
+
+        uris: List[str] = [
+            extract_path(x.uri)
+            for x in resolve_inline_uris(user_visible_files_response, server=self.server)
+        ]
         logger.info(f"{uris=}")
+
+        if dropped_symbols:
+            await self.send_update(
+                "This agent does not support symbol references. A file reference will be used instead."
+            )
 
         paths += uris
 
@@ -257,7 +308,7 @@ class Mentat(agent.ThirdPartyAgent):
             nonlocal finished
             finished = True
             event.set()
-        
+
         async def mentat_loop():
             nonlocal file_changes
 

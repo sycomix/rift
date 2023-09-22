@@ -3,6 +3,7 @@ import os
 from textwrap import dedent
 from typing import List
 
+import rift.ir.custom_parsers as custom_parsers
 import rift.ir.IR as IR
 import rift.ir.parser as parser
 
@@ -140,7 +141,7 @@ class Tests:
                 public int sum(int a, int b)  
                 {  
                     int sum = a + b;
-                    return sq;
+                    return sum;
                 }
             }
         }
@@ -267,8 +268,41 @@ class Tests:
         .lstrip()
         .encode("utf-8")
     )
+    code_java = (
+        dedent(
+            """
+        // This is docstring
+        public class Bicycle {
 
-def new_file(code: IR.Code, path: str, language: IR.Language, project:IR.Project) -> None:
+            // state or field
+            private int gear = 5;
+
+            // behavior or method
+            public void braking() {
+                System.out.println("Working of Braking");
+            }
+        }
+
+        /* This is docstring */
+        public class Math {
+            public static int sum(int a, int b) {
+                int sum = a + b;
+                return sum;
+            }
+        }
+
+        interface Animal {
+            public void animalSound();
+            public int catalogue(string name, int location);
+        }
+    """
+        )
+        .lstrip()
+        .encode("utf-8")
+    )
+
+
+def new_file(code: IR.Code, path: str, language: IR.Language, project: IR.Project) -> None:
     file = IR.File(path)
     parser.parse_code_block(file, code, language)
     project.add_file(file)
@@ -278,20 +312,24 @@ def get_test_project():
     project = IR.Project(root_path="dummy_path")
     new_file(IR.Code(Tests.code_c), "test.c", "c", project)
     new_file(IR.Code(Tests.code_js), "test.js", "javascript", project)
+    new_file(IR.Code(Tests.code_java), "test.java", "java", project)
     new_file(IR.Code(Tests.code_ts), "test.ts", "typescript", project)
     new_file(IR.Code(Tests.code_tsx), "test.tsx", "tsx", project)
     new_file(IR.Code(Tests.code_py), "test.py", "python", project)
     new_file(IR.Code(Tests.code_cpp), "test.cpp", "cpp", project)
     new_file(IR.Code(Tests.code_cs), "test.cs", "c_sharp", project)
     new_file(IR.Code(Tests.code_ocaml), "test.ml", "ocaml", project)
-    # new_file(IR.Code(Tests.code_rescript), "test.res", "rescript", project)
+    if custom_parsers.active:
+        new_file(IR.Code(Tests.code_rescript), "test.res", "rescript", project)
     new_file(IR.Code(Tests.code_ruby), "test.rb", "ruby", project)
     return project
+
 
 def get_test_python_project():
     project = IR.Project(root_path="dummy_path")
     new_file(IR.Code(Tests.code_py), "test.py", "python", project)
     return project
+
 
 def test_parsing():
     script_dir = os.path.dirname(os.path.abspath(__file__))

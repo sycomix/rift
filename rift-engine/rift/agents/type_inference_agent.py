@@ -4,10 +4,12 @@ import os
 import re
 from dataclasses import dataclass, field
 from textwrap import dedent
-from typing import Any, ClassVar, Coroutine, Dict, List, Optional, Tuple, cast
-from urllib.parse import urlparse
+from typing import Any, ClassVar, Coroutine, Dict, List, Optional, Set, Tuple, cast
+from urllib.parse import unquote, urlparse
+from urllib.request import url2pathname
 
 import openai
+
 import rift.agents.abstract as agent
 import rift.agents.registry as registry
 import rift.ir.IR as IR
@@ -22,8 +24,12 @@ from rift.ir.missing_types import (
     files_missing_types_in_project,
     functions_missing_types_in_file,
 )
-from rift.ir.response import extract_blocks_from_response, replace_functions_from_code_blocks, update_typing_imports
-
+from rift.ir.response import (
+    Replace,
+    extract_blocks_from_response,
+    replace_functions_from_code_blocks,
+    update_typing_imports,
+)
 from rift.lsp import LspServer
 from rift.util.TextStream import TextStream
 
@@ -214,7 +220,7 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
             document=document,
             filter_function_ids=filter_function_ids,
             language=language,
-            replace_body=False,
+            replace=Replace.SIGNATURE,
         )
 
     async def code_edits_for_missing_files(
@@ -227,21 +233,23 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         collected_messages: List[str] = []
 
         async def feed_task():
-            openai.api_key = os.environ.get('OPENAI_API_KEY')
-            completion: List[Dict[str, Any]] = openai.ChatCompletion.create( # type: ignore
+            openai.api_key = os.environ.get("OPENAI_API_KEY")
+            completion: List[Dict[str, Any]] = openai.ChatCompletion.create(  # type: ignore
                 model=Config.model, messages=prompt, temperature=Config.temperature, stream=True
             )
             for chunk in completion:
                 await asyncio.sleep(0.0001)
                 chunk_message_dict = chunk["choices"][0]  # type: ignore
-                chunk_message: str = chunk_message_dict["delta"].get("content")  # extract the message
+                chunk_message: str = chunk_message_dict["delta"].get(
+                    "content"
+                )  # extract the message
                 if chunk_message_dict["finish_reason"] is None and chunk_message:
                     collected_messages.append(chunk_message)  # save the message
                     response_stream.feed_data(chunk_message)
             response_stream.feed_eof()
 
-        response_stream._feed_task = asyncio.create_task( # type: ignore
-            self.add_task( # type: ignore
+        response_stream._feed_task = asyncio.create_task(  # type: ignore
+            self.add_task(  # type: ignore
                 f"Generate type annotations for {'/'.join(mt.function_declaration.name for mt in missing_types)}",
                 feed_task,
             ).run()
@@ -277,18 +285,21 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
             groups_of_missing_types.append(group)
         return groups_of_missing_types
 
-    async def process_file(self, file_process: FileProcess, project: IR.Project) -> None:
+    async def process_file(self, file_process: FileProcess, project: IR.Project):
         fmt = file_process.file_missing_types
         language = fmt.language
         document = fmt.code
         groups_of_missing_types = self.split_missing_types_in_groups(fmt.missing_types)
 
         for missing_types in groups_of_missing_types:
-            new_edits, updated_functions = await self.code_edits_for_missing_files(document, language, missing_types)
+            new_edits, updated_functions = await self.code_edits_for_missing_files(
+                document, language, missing_types
+            )
             file_process.edits += new_edits
             file_process.updated_functions += updated_functions
         edit_imports = update_typing_imports(
-            code=document, language=language, updated_functions=file_process.updated_functions)
+            code=document, language=language, updated_functions=file_process.updated_functions
+        )
         if edit_imports is not None:
             file_process.edits.append(edit_imports)
         new_document = fmt.code.apply_edits(file_process.edits)
@@ -349,11 +360,12 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
                 agent.RequestChatRequest(messages=self.get_state().messages)
             )
             return result
-        
+
         await self.send_progress()
         text_document = self.get_state().params.textDocument
         if text_document is not None:
-            current_file_uri = text_document.uri
+            parsed = urlparse(text_document.uri)
+            current_file_uri = url2pathname(unquote(parsed.path)) # Work around bug: https://github.com/scikit-hep/uproot5/issues/325#issue-850683423
         else:
             raise Exception("Missing textDocument")
 
@@ -363,7 +375,9 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
 
         get_user_response_task = AgentTask("Get user response", get_user_response)
         self.set_tasks([get_user_response_task])
-        user_response_coro = cast(Coroutine[None, None, Optional[str]], get_user_response_task.run())
+        user_response_coro = cast(
+            Coroutine[None, None, Optional[str]], get_user_response_task.run()
+        )
         user_response_task = asyncio.create_task(user_response_coro)
         await self.send_progress()
         user_response = await user_response_task
@@ -374,14 +388,39 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
             user_uris = re.findall(r"\[uri\]\((\S+)\)", user_response)
         if user_uris == []:
             user_uris = [current_file_uri]
-        user_paths = [urlparse(uri).path for uri in user_uris]
+        user_references = [IR.Reference.from_uri(uri) for uri in user_uris]
+        symbols_per_file: Dict[str, Set[IR.QualifiedId]] = {}
+        for ref in user_references:
+            if ref.qualified_id:
+                if ref.file_path not in symbols_per_file:
+                    symbols_per_file[ref.file_path] = set()
+                symbols_per_file[ref.file_path].add(ref.qualified_id)
+        user_paths = [ref.file_path for ref in user_references]
 
         file_processes: List[FileProcess] = []
         tot_num_missing = 0
         project = parser.parse_files_in_paths(paths=user_paths)
         if self.debug:
             logger.info(f"\n=== Project Map ===\n{project.dump_map()}\n")
-        files_missing_types = files_missing_types_in_project(project)
+
+        files_missing_types_ = files_missing_types_in_project(project)
+        files_missing_types: List[FileMissingTypes] = []
+
+        # filter files missing types to only include files in symbols_per_file
+        for fmt in files_missing_types_:
+            full_path = os.path.join(project.root_path, fmt.file.path)
+            if full_path not in symbols_per_file:  # no symbols in this file
+                files_missing_types.append(fmt)
+            else:  # filter missing types to only include symbols in symbols_per_file
+                missing_types = [
+                    mt
+                    for mt in fmt.missing_types
+                    if mt.function_declaration.get_qualified_id() in symbols_per_file[full_path]
+                ]
+                if missing_types != []:
+                    fmt.missing_types = missing_types
+                    files_missing_types.append(fmt)
+
         await info_update("\n=== Missing Types ===\n")
         files_missing_str = ""
         for fmt in files_missing_types:

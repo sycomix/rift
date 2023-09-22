@@ -1,10 +1,23 @@
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-import os
 from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
-from urllib.parse import urlparse
 
-Language = Literal["c", "cpp", "c_sharp", "javascript", "ocaml", "python", "rescript", "typescript", "tsx", "ruby"]
+import rift.ir.custom_parsers as custom_parsers
+
+Language = Literal[
+    "c",
+    "cpp",
+    "c_sharp",
+    "java",
+    "javascript",
+    "ocaml",
+    "python",
+    "rescript",
+    "typescript",
+    "tsx",
+    "ruby",
+]
 # e.g. ("A", "B", "foo") for function foo inside class B inside class A
 QualifiedId = str
 Pos = Tuple[int, int]  # (line, column)
@@ -58,11 +71,12 @@ class Statement:
 class Declaration(Statement):
     symbols: List["SymbolInfo"]
 
+
 @dataclass
 class Import:
-    names: List[str] # import foo, bar, baz
-    substring: Substring # the substring of the document that corresponds to this import
-    module_name: Optional[str] = None # from module_name import ...
+    names: List[str]  # import foo, bar, baz
+    substring: Substring  # the substring of the document that corresponds to this import
+    module_name: Optional[str] = None  # from module_name import ...
 
 
 @dataclass
@@ -73,16 +87,16 @@ class Type:
 
     def create_pointer(self) -> "Type":
         return Type(f"{self._str}*")
-    
+
     def create_array(self) -> "Type":
         return Type(f"{self._str}[]")
-    
+
     def create_function(self) -> "Type":
         return Type(f"{self._str}()")
-    
+
     def create_reference(self) -> "Type":
         return Type(f"{self._str}&")
-    
+
     def create_type_of(self) -> "Type":
         return Type(f"typeof({self._str})")
 
@@ -115,6 +129,7 @@ class Parameter:
 @dataclass
 class ValueKind(ABC):
     """Abstract class for value kinds."""
+
     @abstractmethod
     def name(self) -> str:
         raise NotImplementedError
@@ -131,7 +146,7 @@ class FunctionKind(ValueKind):
 
     def name(self) -> str:
         return "Function"
-    
+
     def dump(self, lines: List[str]) -> None:
         if self.parameters != []:
             lines.append(f"   parameters: {self.parameters}")
@@ -147,7 +162,7 @@ class ValKind(ValueKind):
 
     def name(self) -> str:
         return "Value"
-    
+
     def dump(self, lines: List[str]) -> None:
         if self.type is not None:
             lines.append(f"   type: {self.type}")
@@ -168,6 +183,7 @@ class InterfaceKind(ValueKind):
 @dataclass
 class ContainerKind(ABC):
     """Abstract class for container kinds."""
+
     @abstractmethod
     def name(self) -> str:
         raise NotImplementedError
@@ -206,7 +222,7 @@ class SymbolInfo(ABC):
 
     body_sub: Optional[Substring]
     code: Code
-    docstring: str
+    docstring_sub: Optional[Substring]
     exported: bool
     language: Language
     name: str
@@ -229,6 +245,14 @@ class SymbolInfo(ABC):
             start, _end = self.substring
             body_start, _body_end = self.body_sub
             return self.code.bytes[start:body_start]
+        
+    @property
+    def docstring(self) -> Optional[str]:
+        if self.docstring_sub is None:
+            return None
+        else:
+            start, end = self.docstring_sub
+            return self.code.bytes[start:end].decode()
 
     @abstractmethod
     def dump(self, lines: List[str]) -> None:
@@ -240,11 +264,10 @@ class SymbolInfo(ABC):
         )
         if self.scope != "":
             lines.append(f"   scope: {self.scope}")
-        if self.docstring != "":
+        if self.docstring_sub is not None:
             lines.append(f"   docstring: {self.docstring}")
         if self.exported:
             lines.append(f"   exported: {self.exported}")
-
 
     @abstractmethod
     def kind(self) -> str:
@@ -263,7 +286,7 @@ class ValueDeclaration(SymbolInfo):
         if self.body_sub is not None:
             lines.append(f"   body: {self.body_sub}")
         self.value_kind.dump(lines)
-            
+
 
 @dataclass
 class ContainerDeclaration(SymbolInfo):
@@ -280,6 +303,7 @@ class ContainerDeclaration(SymbolInfo):
         else:
             id = self.name
         self.dump_common(id, lines)
+
 
 @dataclass
 class File:
@@ -335,7 +359,7 @@ class File:
         def dump_statement(statement: Statement, indent: int) -> None:
             if isinstance(statement, Declaration):
                 for symbol in statement.symbols:
-                   dump_symbol(symbol, indent)
+                    dump_symbol(symbol, indent)
             else:
                 pass
 
@@ -365,18 +389,19 @@ class File:
 class Reference:
     """
     A reference to a file, and optionally a symbol inside that file.
-    
+
     The file path is the path given to the os for reading. A reference can be converted
     to a URI, which is a string that can be used to uniquely identify a reference.
-    
+
     Examples:
     - file_path: "home/user/project/src/main.py", qualified_id: None
     - file_path: "home/user/project/src/main.py", qualified_id: "MyClass"
     - file_path: "home/user/project/src/main.py", qualified_id: "MyClass.my_function"
-    
-    The URI is of the form "file://<file_path>#<qualified_id>" or "file://<file_path>" 
+
+    The URI is of the form "<file_path>#<qualified_id>" or "<file_path>"
     if qualified_id is None.
     """
+
     file_path: str
     qualified_id: Optional[QualifiedId] = None
 
@@ -385,9 +410,11 @@ class Reference:
 
     @staticmethod
     def from_uri(uri: str) -> "Reference":
-        parsed = urlparse(uri)
-        qualified_id = parsed.fragment if parsed.fragment != "" else None
-        return Reference(file_path=parsed.path, qualified_id=qualified_id)
+        # split uri on first '#' character
+        split = uri.split("#", 1)
+        file_path = split[0]
+        qualified_id = split[1] if len(split) > 1 else None
+        return Reference(file_path=file_path, qualified_id=qualified_id)
 
 
 @dataclass
@@ -450,12 +477,14 @@ def language_from_file_extension(file_path: str) -> Optional[Language]:
         return "c_sharp"
     elif file_path.endswith(".js"):
         return "javascript"
+    elif file_path.endswith(".java"):
+        return "java"
     elif file_path.endswith(".ml"):
         return "ocaml"
     elif file_path.endswith(".py"):
         return "python"
-    # elif file_path.endswith(".res"):
-    #     return "rescript"
+    elif file_path.endswith(".res") and custom_parsers.active:
+        return "rescript"
     elif file_path.endswith(".ts"):
         return "typescript"
     elif file_path.endswith(".tsx"):

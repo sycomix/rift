@@ -5,10 +5,9 @@ import os
 import re
 from typing import Callable, List, Optional, TypeVar
 
-import rift.lsp.types as lsp
-import rift.ir.parser as parser
 import rift.ir.IR as IR
-
+import rift.ir.parser as parser
+import rift.lsp.types as lsp
 
 T = TypeVar("T")
 
@@ -29,12 +28,11 @@ def lookup_match(match: str, server: "Server") -> str:
         return server.documents[lsp_uri].text
 
     # technically invalid in windows, where # can be in a path name.
-    elif '#' in match:
-        this_file = match.split('#')[0]
+    elif "#" in match:
+        this_file = match.split("#")[0]
         project = parser.parse_files_in_paths([this_file])
-        reference_some_function = IR.Reference.from_uri(lsp_uri)
+        reference_some_function = IR.Reference.from_uri(match)
         symbol_ref = project.lookup_reference(reference_some_function)
-        print ('The file', this_file, project, reference_some_function, symbol_ref)
         if symbol_ref is not None and symbol_ref.symbol is not None:
             body = symbol_ref.symbol.get_substring().decode().strip()
             logger.info(f"[lookup_match] symbol reference found")
@@ -54,15 +52,6 @@ def lookup_match(match: str, server: "Server") -> str:
                 return ""
     except:
         return ""
-
-
-def replace_inline_uris(user_response: str, server: "Server") -> str:
-    matches = extract_uris(user_response)
-    for match in matches:
-        logger.info(f"[replace_inline_uris] found {match=}")
-        replacement = lookup_match(match, server)
-        user_response = user_response.replace(f"uri://{match}", "```" + replacement + "```")
-    return user_response
 
 
 def resolve_inline_uris(user_response: str, server: "Server") -> List[lsp.Document]:
