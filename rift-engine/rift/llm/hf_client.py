@@ -96,8 +96,7 @@ class HuggingFaceClient(AbstractCodeCompletionProvider):
             new_word = self.tokenizer.decode(out_tk.squeeze())
 
             if "\n" in new_word:
-                result = generated.split("\n")[-1] + new_word.split("\n")[0]
-                yield result
+                yield generated.split("\n")[-1] + new_word.split("\n")[0]
                 for line in new_word.split("\n")[1:]:
                     yield line + "\n"
             generated += new_word

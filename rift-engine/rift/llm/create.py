@@ -52,10 +52,9 @@ def create_client(
 
     if config in CLIENTS:
         return CLIENTS[config]
-    else:
-        client = create_client_core(config, openai_api_key)
-        CLIENTS[config] = client
-        return client
+    client = create_client_core(config, openai_api_key)
+    CLIENTS[config] = client
+    return client
 
 
 def parse_type_name_path(config: str) -> Tuple[str, str, str]:
@@ -95,11 +94,10 @@ def create_client_core(
             kwargs["default_model"] = name
         if openai_api_key:
             kwargs["api_key"] = openai_api_key
-        else:
-            if not os.environ.get("OPENAI_API_KEY"):
-                logging.getLogger().error(
-                    "Trying to create an OpenAIClient without an OpenAI key set in Rift settings or set as the OPENAI_API_KEY environment variable."
-                )
+        elif not os.environ.get("OPENAI_API_KEY"):
+            logging.getLogger().error(
+                "Trying to create an OpenAIClient without an OpenAI key set in Rift settings or set as the OPENAI_API_KEY environment variable."
+            )
         if path:
             kwargs["api_url"] = path
         return OpenAIClient.parse_obj(kwargs)

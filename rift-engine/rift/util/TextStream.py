@@ -33,7 +33,7 @@ class TextStream:
     def feed_data(self, data: str):
         if self._eof:
             raise RuntimeError("feed_data() called after feed_eof()")
-        if len(data) == 0:
+        if not data:
             return
         self._buffer += data
         self._wakeup_waiter()
@@ -53,7 +53,6 @@ class TextStream:
 
         if self._eof:
             raise StopAsyncIteration
-            raise RuntimeError(f"{func_name} called after feed_eof()")
         if self._feed_task is not None:
             if self._feed_task.done():
                 exn = self._feed_task.exception()
@@ -104,7 +103,7 @@ class TextStream:
         if n < 0:
             raise ValueError("readexactly() called with negative size")
         while len(self._buffer) < n and not self._eof:
-            await self._wait_for_data(f"readexactly()")
+            await self._wait_for_data("readexactly()")
         if len(self._buffer) < n:
             assert self._eof
             incomplete: Any = self.pop_all()
@@ -120,15 +119,13 @@ class TextStream:
         while len(self._buffer) == 0:
             if self._eof:
                 raise StopAsyncIteration
-            else:
-                try:
-                    await self._wait_for_data("__anext__")
-                except asyncio.CancelledError:
-                    if self._on_cancel is not None:
-                        self._on_cancel()
-                    raise
-        result = self.pop_all()
-        return result
+            try:
+                await self._wait_for_data("__anext__")
+            except asyncio.CancelledError:
+                if self._on_cancel is not None:
+                    self._on_cancel()
+                raise
+        return self.pop_all()
 
     @classmethod
     def from_aiter(cls, x: AsyncIterable[str], loop=None):

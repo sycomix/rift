@@ -10,12 +10,11 @@ import rift.ir.parser_core as parser_core
 
 
 def get_parser(language: IR.Language) -> Parser:
-    if language == "rescript" and custom_parser.active:
-        parser = custom_parser.parser
-        parser.set_language(custom_parser.ReScript)
-        return parser
-    else:
+    if language != "rescript" or not custom_parser.active:
         return get_tree_sitter_parser(language)
+    parser = custom_parser.parser
+    parser.set_language(custom_parser.ReScript)
+    return parser
 
 
 def parse_code_block(
@@ -58,7 +57,7 @@ def parse_files_in_paths(
     """
     Parses all files with known extensions in the provided list of paths.
     """
-    if len(paths) == 0:
+    if not paths:
         raise Exception("No paths provided")
     if len(paths) == 1 and os.path.isfile(paths[0]):
         root_path = os.path.dirname(paths[0])

@@ -97,12 +97,11 @@ class Aider(agent.ThirdPartyAgent):
             params=params,
             messages=[],
         )
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-        return obj
 
     async def apply_file_changes(
         self, updates: List[file_diff.FileChange]
@@ -189,7 +188,7 @@ class Aider(agent.ThirdPartyAgent):
                             uri, symbol = parsed_uri.split("#")[0], parsed_uri.split("#")[1]
                         else:
                             uri = parsed_uri
-                        
+
 
                         reference = IR.Reference.from_uri(uri)
                         file_path = reference.file_path
@@ -200,7 +199,7 @@ class Aider(agent.ThirdPartyAgent):
                             return f"`{relative_path}`" if not dropped_symbols else f"{symbol} @ `{relative_path}`"
                         else:
                             return f"{relative_path}" if not dropped_symbols else f"{symbol} @ {relative_path}"
-                    
+
                     # def process_path(path):
                     #     relative_path = os.path.relpath(path, self.state.params.workspaceFolderPath)
                     #     if not resp.startswith("/add"):  # /add does not like a quoted path
@@ -234,8 +233,8 @@ class Aider(agent.ThirdPartyAgent):
             elif self.yes is False:
                 res = "no"
             else:
-                res = request_chat_wrapper(str(question) + " (y/n)")
-                # res = "yes"
+                res = request_chat_wrapper(f"{str(question)} (y/n)")
+                        # res = "yes"
 
             hist = f"{question.strip()} {res.strip()}"
 
@@ -254,7 +253,7 @@ class Aider(agent.ThirdPartyAgent):
             try:
                 rel_fnames = list(rel_fnames)
                 show = None
-                if len(rel_fnames) > 0:
+                if rel_fnames:
                     show = "[aider] Current context:\n" + "\n".join(rel_fnames)
 
                 inp = ""

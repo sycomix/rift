@@ -67,12 +67,11 @@ class RiftChatAgent(Agent):
             document=document,
             params=params,
         )
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-        return obj
 
     async def run(self) -> AgentRunResult:
         response_lock = Lock()

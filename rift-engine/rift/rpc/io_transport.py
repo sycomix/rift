@@ -43,10 +43,10 @@ class AsyncStreamTransport(Transport):
             line = await self.reader.readline()
             if line == b"":
                 assert self.reader.at_eof()
-                if len(header) == 0:
+                if not header:
                     raise TransportClosedOK("end of stream")
                 else:
-                    raise TransportClosedError(f"unexpected end of stream")
+                    raise TransportClosedError("unexpected end of stream")
             try:
                 # [todo] should be 'latin-1' encoding?
                 line = line.decode().strip()
@@ -59,7 +59,7 @@ class AsyncStreamTransport(Transport):
                     # [todo] gracefully return a valid http 400 error and a message about
                     # how to get started with rift.
                     raise TransportError(
-                        f"Looks like you're trying to use Rift with a web browser. Please read the getting started docs to learn how to use Rift."
+                        "Looks like you're trying to use Rift with a web browser. Please read the getting started docs to learn how to use Rift."
                     )
                 raise TransportError(f"invalid header, expecting a colon:\n{line}")
             k, v = line.split(":", 1)
@@ -70,15 +70,13 @@ class AsyncStreamTransport(Transport):
         content_length = int(content_length)
         # read the body
         try:
-            data = await self.reader.readexactly(content_length)
-            return data
+            return await self.reader.readexactly(content_length)
         except asyncio.IncompleteReadError as e:
             raise TransportClosedError("unexpected end of stream") from e
 
     async def send(self, data: bytes, header={}):
         header["Content-Length"] = len(data)
-        header = "".join(f"{k}:{v}\r\n" for k, v in header.items())
-        header += "\r\n"
+        header = "".join(f"{k}:{v}\r\n" for k, v in header.items()) + "\r\n"
         self.writer.write(header.encode())
         self.writer.write(data)
         await self.writer.drain()

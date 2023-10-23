@@ -82,12 +82,11 @@ class CodeEditAgent(Agent):
             selection=params.selection,
             messages=[openai.Message.assistant("What do you want me to do?")],
         )
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-        return obj
 
     async def run(self) -> AgentRunResult:  # main entry point
         try:
@@ -391,21 +390,17 @@ class CodeEditAgent(Agent):
                     self.state.additive_ranges.apply_edit(c)
                 if c.range is None:
                     await self.cancel("the whole document got replaced")
-                else:
-                    if c.range.end <= self.state.cursor:
+                elif c.range.end <= self.state.cursor:
                         # some text was changed before our cursor
-                        if c.range.end.line < self.state.cursor.line:
-                            # the change is occurring on lines strictly above us
-                            # so we can adjust the number of lines
-                            lines_to_add = (
-                                c.text.count("\n") + c.range.start.line - c.range.end.line
-                            )
-                            self.state.cursor += (lines_to_add, 0)
-                        else:
-                            # self.cancel("someone is editing on the same line as us")
-                            pass  # temporarily disabled
-                    elif self.state.cursor in c.range:
-                        await self.cancel("someone is editing the same text as us")
+                    if c.range.end.line < self.state.cursor.line:
+                        # the change is occurring on lines strictly above us
+                        # so we can adjust the number of lines
+                        lines_to_add = (
+                            c.text.count("\n") + c.range.start.line - c.range.end.line
+                        )
+                        self.state.cursor += (lines_to_add, 0)
+                elif self.state.cursor in c.range:
+                    await self.cancel("someone is editing the same text as us")
 
         self.state.document = after
 
@@ -413,15 +408,7 @@ class CodeEditAgent(Agent):
         ...  # unreachable
 
     def accepted_diff_text(self, diff: List[Tuple[int, str]]) -> str:
-        result = ""
-        for op, text in diff:
-            if op == -1:  # remove
-                pass
-            elif op == 0:
-                result += text
-            elif op == 1:
-                result += text
-        return result
+        return "".join(text for op, text in diff if op in [0, 1])
 
     async def accept(self) -> None:
         logger.info(f"{self} user accepted result")

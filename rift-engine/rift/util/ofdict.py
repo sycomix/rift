@@ -65,17 +65,15 @@ def ofdict_dataclass(data_class_type: Type[T], json_like_object: JsonLike) -> T:
         key = field.name
 
         # Check if the key is not in the json_like_object
-        if key not in json_like_object:
-            # Check if key's type is optional
-            if field.type is not None and is_optional(field.type):
-                value = None
-            else:
-                raise OfDictError(
-                    f"Missing {field.name} on input dict. Decoding {json_like_object} to type {data_class_type}."
-                )
-        else:
+        if key in json_like_object:
             value = json_like_object[key]
 
+        elif field.type is not None and is_optional(field.type):
+            value = None
+        else:
+            raise OfDictError(
+                f"Missing {field.name} on input dict. Decoding {json_like_object} to type {data_class_type}."
+            )
         # Process the value if the type is defined for field
         if field.type is not None:
             with dpath(key):
@@ -94,9 +92,8 @@ def atstr():
     p = ofdict_context.get()
     if len(p) == 0:
         return ""
-    else:
-        s = ".".join(p)
-        return f" at {s}"
+    s = ".".join(p)
+    return f" at {s}"
 
 
 @contextmanager
@@ -166,11 +163,7 @@ def ofdict(A: Type[T], a: JsonLike) -> T:
             raise OfDictError(f"In Literal expected one of {values}, but got {a}")
     if is_optional(A):
         X = as_optional(A)
-        if a is None:
-            return None  # type: ignore
-        else:
-            return ofdict(X, a)  # type: ignore
-
+        return None if a is None else ofdict(X, a)
     if get_origin(A) is Union:
         es = []
         for X in get_args(A):
@@ -209,10 +202,7 @@ def _list_ofdict(A, a):
     if not isinstance(a, list):
         raise OfDictError(f"Expected a list but got a {type(a)}")
     X = as_list(A)
-    if X is not None:
-        return [ofdict(X, y) for y in a]
-    else:
-        return a
+    return [ofdict(X, y) for y in a] if X is not None else a
 
 
 @ofdict.register(set)
@@ -220,10 +210,7 @@ def _set_ofdict(A, a):
     if not isinstance(a, list):
         raise OfDictError(f"Expected a list but got a {type(a)}")
     X = as_set(A)
-    if X is not None:
-        return set(ofdict(X, y) for y in a)
-    else:
-        return set(a)
+    return {ofdict(X, y) for y in a} if X is not None else set(a)
 
 
 @ofdict.register(dict)
@@ -281,19 +268,19 @@ def validate(t: Type, item) -> bool:
         return True
     o = as_optional(t)
     if o is not None:
-        if t is None:
-            return True
-        else:
-            return validate(o, item)
+        return True if t is None else validate(o, item)
     X = as_list(t)
     if X is not None:
         assert isinstance(item, list)
 
-        return all([validate(X, x) for x in item])
+        return all(validate(X, x) for x in item)
 
     if isinstance(item, t):
         if is_dataclass(item):
-            return all([validate(field.type, getattr(item, field.name)) for field in fields(item)])
+            return all(
+                validate(field.type, getattr(item, field.name))
+                for field in fields(item)
+            )
         return True
     raise NotImplementedError(f"Don't know how to validate {t}")
 
@@ -318,19 +305,18 @@ def todict(x: Any) -> JsonLike:
     This should not recurse on the arguments. Just return one of dict, list, tuple, str, int, float, bool, or None.
     `MyJsonEncoder` will run todict recursively on any child objects.
     """
-    if isinstance(x, OfDictUnion):
-        j = _todict_core(x)
-        cls = type(x)
-        root = cls._root_class
-        class_key = root._class_key
-        assert issubclass(cls, root)
-        assert cls in cls._class_table
-        assert isinstance(j, dict)
-        assert class_key not in j
-        j[class_key] = cls.__name__
-        return j
-    else:
+    if not isinstance(x, OfDictUnion):
         return _todict_core(x)
+    j = _todict_core(x)
+    cls = type(x)
+    root = cls._root_class
+    class_key = root._class_key
+    assert issubclass(cls, root)
+    assert cls in cls._class_table
+    assert isinstance(j, dict)
+    assert class_key not in j
+    j[class_key] = cls.__name__
+    return j
 
 
 def _todict_core(x: Any):
@@ -389,7 +375,7 @@ class MyJsonEncoder(json.JSONEncoder):
         if isinstance(obj, dict):
             # json encoder doesn't recursively encode keys.
             obj = {todict_key(k): v for k, v in obj.items()}
-            assert all(is_json_key(k) for k in obj.keys())
+            assert all(is_json_key(k) for k in obj)
         return super().encode(obj)
 
     # [todo] needs to handle `None` by not setting json field.
@@ -426,7 +412,7 @@ def todict_key(x: Any) -> JsonKey:
 def todict_rec(x: Any) -> JsonLike:
     """Recursive version of `todict`."""
     if x is NotImplemented:
-        raise TypeError(f"Oops")
+        raise TypeError("Oops")
     assert x is not NotImplemented
     if x is None:
         return None

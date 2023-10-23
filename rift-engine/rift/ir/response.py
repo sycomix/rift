@@ -34,8 +34,7 @@ def extract_blocks_from_response(response: str) -> List[IR.Code]:
                 inside_code_block = True
         elif inside_code_block:
             current_block += line + "\n"
-    code_blocks = [IR.Code(block.encode("utf-8")) for block in code_blocks_str]
-    return code_blocks
+    return [IR.Code(block.encode("utf-8")) for block in code_blocks_str]
 
 
 def parse_code_blocks(code_blocks: List[IR.Code], language: IR.Language) -> IR.File:
@@ -176,10 +175,8 @@ def update_typing_imports(
 ) -> Optional[IR.CodeEdit]:
     file = parse_code_blocks(code_blocks=[code], language=language)
     typing_import = file.search_module_import("typing")
-    typing_names: Set[str] = set()
     missing_names: Set[str] = set()
-    if typing_import is not None:
-        typing_names = set(typing_import.names)
+    typing_names = set(typing_import.names) if typing_import is not None else set()
     for f in updated_functions:
         if isinstance(f.symbol_kind, IR.FunctionKind):
             fun_kind = f.symbol_kind
@@ -197,8 +194,7 @@ def update_typing_imports(
             import_str += "\n"
         else:
             substring = typing_import.substring
-        code_edit = IR.CodeEdit(substring=substring, new_bytes=import_str.encode("utf-8"))
-        return code_edit
+        return IR.CodeEdit(substring=substring, new_bytes=import_str.encode("utf-8"))
 
 
 def replace_functions_from_code_blocks(

@@ -70,7 +70,7 @@ def generate_stream(self: LLModel, prompt: str, **kwargs) -> TextStream:
     keys = [x for x, _ in LLModelPromptContext._fields_]
     context_args = {k: kwargs[k] for k in keys if k in kwargs}
     rest_kwargs = {k: kwargs[k] for k in kwargs if k not in keys}
-    if len(rest_kwargs) > 0:
+    if rest_kwargs:
         logger.warning(f"Unrecognized kwargs: {rest_kwargs}")
     context = LLModelPromptContext(**context_args)
 
@@ -161,8 +161,7 @@ class Gpt4AllSettings(BaseSettings):
                 kwargs["model_path"] = str(self.model_path)
             if self.model_type is not None:
                 kwargs["model_type"] = self.model_type
-            model = GPT4All(**kwargs)
-            return model
+            return GPT4All(**kwargs)
 
 
 class Gpt4AllModel(AbstractCodeCompletionProvider, AbstractChatCompletionProvider):

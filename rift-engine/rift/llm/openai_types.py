@@ -24,7 +24,7 @@ class Message(BaseModel):
 
     @classmethod
     def mk(cls, role: str, content: str):
-        if role in ["system", "user", "assistant"]:
+        if role in {"system", "user", "assistant"}:
             return cls(role=role, content=content, name=None)  # type: ignore
         else:
             return cls(role="system", content=content, name=role)

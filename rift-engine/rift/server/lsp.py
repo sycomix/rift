@@ -179,11 +179,9 @@ class LspServer(BaseLspServer):
             # Creating a TextDocumentItem instance for each file
             doc_item = lsp.TextDocumentItem(
                 text=text,
-                # Constructing the Uri for each file
-                uri="file://" + os.path.join(os.getcwd(), str(file_path))
+                uri=f"file://{os.path.join(os.getcwd(), str(file_path))}"
                 if not file_path.startswith("/")
                 else str(file_path),
-                # Finding the language ID for each file, or using "*" if language ID cannot be determined
                 languageId=find_matching_language(file_path, language_map) or "*",
                 version=1,
             )
@@ -223,9 +221,10 @@ class LspServer(BaseLspServer):
             return
         self.model_config = config
         logger.info(f"{self} recieved model config {config}")
-        cancel_tasks = []
-        for k, h in self.active_agents.items():
-            cancel_tasks.append(asyncio.create_task(h.cancel("config changed")))
+        cancel_tasks = [
+            asyncio.create_task(h.cancel("config changed"))
+            for k, h in self.active_agents.items()
+        ]
         self.code_edit_model = config.create_completions()
         self.chat_model = config.create_chat()
         logger.info(f"created new models: {self.chat_model=} {self.code_edit_model=}")
@@ -371,9 +370,10 @@ class LspServer(BaseLspServer):
     async def on_shutdown(self, params: None):
         logger.info(f"shutdown {params=}")
         self.shutdown = True
-        cancel_tasks = []
-        for agent in self.active_agents.values():
-            cancel_tasks.append(asyncio.create_task(agent.cancel()))
+        cancel_tasks = [
+            asyncio.create_task(agent.cancel())
+            for agent in self.active_agents.values()
+        ]
         await asyncio.wait(cancel_tasks)
 
     @rpc_method("exit")

@@ -61,7 +61,7 @@ class RangeSet:
                     ins.append(c)
                 else:
                     outs.append(c)
-            if len(ins) > 0:
+            if ins:
                 x = Range.union([r] + ins)
                 outs.append(x)
             else:
@@ -70,10 +70,7 @@ class RangeSet:
         return RangeSet(classes)
 
     def __contains__(self, pos: Position):
-        for range in self.ranges:
-            if pos in range:
-                return True
-        return False
+        return any(pos in range for range in self.ranges)
 
     def cover(self):
         if len(self.ranges) == 0:
@@ -81,8 +78,6 @@ class RangeSet:
         return Range.union(self.ranges)
 
     def apply_edit(self, edit: TextDocumentContentChangeEvent):
-        if edit.range is None:
-            pass
         ranges = set()
         n = len(edit.text)
         δ = n - len(edit.range)

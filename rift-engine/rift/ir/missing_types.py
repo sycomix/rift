@@ -47,19 +47,18 @@ def functions_missing_types_in_file(file: IR.File) -> List[MissingType]:
         parameters = function_kind.parameters
         if parameters != []:
             if (
-                (parameters[0].name == "self" or parameters[0].name == "cls")
+                parameters[0].name in ["self", "cls"]
                 and d.language == "python"
                 and d.scope != ""
             ):
                 parameters = parameters[1:]
-            for p in parameters:
-                if p.type is None:
-                    missing_parameters.append(p.name)
-        if function_kind.return_type is None:
-            if d.language in ["javascript", "typescript", "tsx"]:
+            missing_parameters.extend(p.name for p in parameters if p.type is None)
+        if d.language in ["javascript", "typescript", "tsx"]:
+            if function_kind.return_type is None:
                 if function_kind.has_return:
                     missing_return = True
-            elif d.language in ["ocaml", "python"]:
+        elif d.language in ["ocaml", "python"]:
+            if function_kind.return_type is None:
                 missing_return = True
         if missing_parameters != [] or missing_return:
             functions_missing_types.append(

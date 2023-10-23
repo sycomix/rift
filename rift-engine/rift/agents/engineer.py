@@ -74,9 +74,7 @@ def __fix_windows_path(path: str) -> str:
     """
     pattern = r"^/(.)%3A"
 
-    match = re.match(pattern, path)
-
-    if match:
+    if match := re.match(pattern, path):
         drive_letter = match.group(1)
         return path.replace(f"/{drive_letter}%3A", f"{drive_letter}:")
     else:
@@ -92,9 +90,7 @@ def _fix_windows_path(path: str) -> str:
     """
     pattern = r"^/(.)%3A"
 
-    match = re.match(pattern, path)
-
-    if match:
+    if match := re.match(pattern, path):
         drive_letter = match.group(1)
         return path.replace(f"/{drive_letter}%3A", f"{drive_letter}:")
     else:
@@ -299,7 +295,7 @@ class EngineerAgent(ThirdPartyAgent):
                 dbs.logs[step.__name__] = AI.serialize_messages(messages)
                 items = list(dbs.workspace.in_memory_dict.items())
                 updates = [x for x in items if x[0] not in SEEN]
-                if len(updates) > 0:
+                if updates:
                     # for file_path, new_contents in updates:
                     await self.server.apply_workspace_edit(
                         lsp.ApplyWorkspaceEditParams(
@@ -313,9 +309,7 @@ class EngineerAgent(ThirdPartyAgent):
                         )
                     )
                     for x in items:
-                        if x[0] in SEEN:
-                            pass
-                        else:
+                        if x[0] not in SEEN:
                             SEEN.add(x[0])
 
                 step_events[i].set()
@@ -340,13 +334,11 @@ class EngineerAgent(ThirdPartyAgent):
             params=params,
             messages=[openai.Message.assistant("What do you want to build?")],
         )
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-
-        return obj
 
     async def run(self) -> AgentRunResult:  # main entry point
         self.RESPONSE = ""

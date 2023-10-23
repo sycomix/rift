@@ -71,12 +71,11 @@ class ReversoAgent(Agent):
             params=params,
             selection=params.selection,
         )
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-        return obj
 
     async def run(self) -> AgentRunResult:  # main entry point
         self.server.register_change_callback(self.on_change, self.state.document.uri)
@@ -514,21 +513,17 @@ really want something like
                     self.state.additive_ranges.apply_edit(c)
                 if c.range is None:
                     await self.cancel("the whole document got replaced")
-                else:
-                    if c.range.end <= self.state.cursor:
+                elif c.range.end <= self.state.cursor:
                         # some text was changed before our cursor
-                        if c.range.end.line < self.state.cursor.line:
-                            # the change is occurring on lines strictly above us
-                            # so we can adjust the number of lines
-                            lines_to_add = (
-                                c.text.count("\n") + c.range.start.line - c.range.end.line
-                            )
-                            self.state.cursor += (lines_to_add, 0)
-                        else:
-                            # self.cancel("someone is editing on the same line as us")
-                            pass  # temporarily disabled
-                    elif self.state.cursor in c.range:
-                        await self.cancel("someone is editing the same text as us")
+                    if c.range.end.line < self.state.cursor.line:
+                        # the change is occurring on lines strictly above us
+                        # so we can adjust the number of lines
+                        lines_to_add = (
+                            c.text.count("\n") + c.range.start.line - c.range.end.line
+                        )
+                        self.state.cursor += (lines_to_add, 0)
+                elif self.state.cursor in c.range:
+                    await self.cancel("someone is editing the same text as us")
 
         self.state.document = after
 

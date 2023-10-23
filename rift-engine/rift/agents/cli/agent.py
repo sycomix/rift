@@ -145,6 +145,8 @@ async def main(agent_cls, params):
 
         agent = agent_cls(run_params=params, console=console)
 
+
+
         @dataclass
         class AgentRunStats:
             _start: float = field(default_factory=time.time)
@@ -152,13 +154,14 @@ async def main(agent_cls, params):
 
             def __post_init__(self):
                 self.stats["elapsed_time"] = None
-                self.stats["changed_files"] = list()
+                self.stats["changed_files"] = []
 
             def elapsed(self):
                 return time.time() - self._start
 
             def report_stats(self):
                 console.print(Panel("[AgentRunStats] report:\n" + json.dumps(self.stats, indent=2)))
+
 
         agent_stats = AgentRunStats()
 

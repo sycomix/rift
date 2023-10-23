@@ -67,12 +67,10 @@ class MissingDocStringPrompt:
     def mk_user_msg(
         functions_missing_docstrings: List[FunctionMissingDocstring], code: IR.Code
     ) -> str:
-        missing_str = ""
-        n = 0
-        for function in functions_missing_docstrings:
-            n += 1
-            missing_str += f"{n}. {function.function_declaration.name}\n"
-
+        missing_str = "".join(
+            f"{n}. {function.function_declaration.name}\n"
+            for n, function in enumerate(functions_missing_docstrings, start=1)
+        )
         return dedent(
             f"""
         Write doc strings for the following functions:
@@ -100,18 +98,6 @@ class MissingDocStringPrompt:
         language: IR.Language,
         functions_missing_docstrings: List[FunctionMissingDocstring],
     ) -> Prompt:
-        example_py = '''
-            ```python
-                def foo(a: t1, b : t2) -> t3
-                    """
-                    Adds two numbers together.
-
-                    :param a: The first number to add.
-                    :param b: The second number to add.
-                    :return: The sum of a and b.
-                    """
-            ```
-        '''
         example_js = """
             ```javascript
                 /**
@@ -122,18 +108,6 @@ class MissingDocStringPrompt:
                 * @returns {t3} The sum of a and b.
                 */
                 function foo(a: t1, b : t2) : t3 {
-            ```
-        """
-        example_ts = """
-            ```typescript
-                /**
-                * Adds two numbers together.
-                * 
-                * @param a - The first number to add.
-                * @param b - The second number to add.
-                * @returns The sum of a and b.
-                */
-                function foo(a: t1, b : t2): t3 {
             ```
         """
         example_ocaml = """
@@ -147,12 +121,36 @@ class MissingDocStringPrompt:
         """
         example = ""
         if language in ["typescript", "tsx"]:
+            example_ts = """
+            ```typescript
+                /**
+                * Adds two numbers together.
+                * 
+                * @param a - The first number to add.
+                * @param b - The second number to add.
+                * @returns The sum of a and b.
+                */
+                function foo(a: t1, b : t2): t3 {
+            ```
+        """
             example = example_ts
         elif language == "javascript":
             example = example_js
         elif language == "ocaml":
             example = example_ocaml
         else:
+            example_py = '''
+            ```python
+                def foo(a: t1, b : t2) -> t3
+                    """
+                    Adds two numbers together.
+
+                    :param a: The first number to add.
+                    :param b: The second number to add.
+                    :return: The sum of a and b.
+                    """
+            ```
+        '''
             example = example_py
         system_msg = dedent(
             """
@@ -296,13 +294,15 @@ class MissingDocstringAgent(agent.ThirdPartyAgent):
         group: List[FunctionMissingDocstring] = []
         for function in functions_missing_docstrings:
             group.append(function)
-            split = len(group) == Config.max_size_group_missing_docstrings
-            # also split if a function with the same name is in the current group (e.g. from another class)
-            for function2 in group:
-                if function.function_declaration.name == function2.function_declaration.name:
-                    split = True
-                    break
-            if split:
+            if split := next(
+                (
+                    True
+                    for function2 in group
+                    if function.function_declaration.name
+                    == function2.function_declaration.name
+                ),
+                len(group) == Config.max_size_group_missing_docstrings,
+            ):
                 groups.append(group)
                 group = []
         if len(group) > 0:

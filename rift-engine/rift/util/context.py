@@ -22,12 +22,11 @@ def extract_uris(user_response: str) -> List[str]:
 
 def lookup_match(match: str, server: "Server") -> str:
     logger.info("in lookup match")
-    lsp_uri = "file://" + match
+    lsp_uri = f"file://{match}"
     if lsp_uri in server.documents:
         logger.info(f"[lookup_match] found in server {server.documents.keys()=}")
         return server.documents[lsp_uri].text
 
-    # technically invalid in windows, where # can be in a path name.
     elif "#" in match:
         this_file = match.split("#")[0]
         project = parser.parse_files_in_paths([this_file])
@@ -35,10 +34,10 @@ def lookup_match(match: str, server: "Server") -> str:
         symbol_ref = project.lookup_reference(reference_some_function)
         if symbol_ref is not None and symbol_ref.symbol is not None:
             body = symbol_ref.symbol.get_substring().decode().strip()
-            logger.info(f"[lookup_match] symbol reference found")
+            logger.info("[lookup_match] symbol reference found")
             return body
 
-    logger.info(f"[lookup_match] not found in server")
+    logger.info("[lookup_match] not found in server")
     try:
         if os.path.isdir(match):
             logger.info("[lookup_match] match is dir")
@@ -74,7 +73,7 @@ def contextual_prompt(
         # TODO add truncation logic
         ...
 
-    result = (
+    return (
         (
             "Visible files:\n"
             + "\n".join(
@@ -92,4 +91,3 @@ def contextual_prompt(
         if documents
         else prompt
     )
-    return result

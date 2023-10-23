@@ -74,8 +74,7 @@ def parse_type(language: Language, node: Node) -> Type:
                 # remove first and last argument: < and >
                 arguments = arguments_node.children[1:-1]
                 arguments = [parse_type(language, n) for n in arguments]
-                t = Type.constructor(name=name, arguments=arguments)
-                return t
+                return Type.constructor(name=name, arguments=arguments)
             else:
                 logger.warning(f"Unknown arguments_node type node: {arguments_node}")
         else:
@@ -95,9 +94,7 @@ def add_c_cpp_declarators_to_type(type: Type, declarators: List[str]) -> Type:
             t = t.function()
         elif d == "reference_declarator":
             t = t.reference()
-        elif d == "identifier":
-            pass
-        else:
+        elif d != "identifier":
             logger.warning(f"Unknown declarator: {d}")
     return t
 
@@ -123,9 +120,7 @@ def get_c_cpp_parameter(language: Language, node: Node) -> Parameter:
     else:
         type = parse_type(language=language, node=type_node)
         type = add_c_cpp_declarators_to_type(type, declarators)
-    name = ""
-    if final_node.type == "identifier":
-        name = final_node.text.decode()
+    name = final_node.text.decode() if final_node.type == "identifier" else ""
     return Parameter(name=name, type=type)
 
 
@@ -180,16 +175,15 @@ def find_c_cpp_function_declarator(node: Node) -> Optional[Tuple[List[str], Node
     if node.type == "function_declarator":
         return [], node
     declarator_node = node.child_by_field_name("declarator")
-    if declarator_node is not None:
-        res = find_c_cpp_function_declarator(declarator_node)
-        if res is None:
-            return None
-        declarators, fun_node = res
-        if declarator_node.type != "function_declarator":
-            declarators.append(declarator_node.type)
-        return declarators, fun_node
-    else:
+    if declarator_node is None:
         return None
+    res = find_c_cpp_function_declarator(declarator_node)
+    if res is None:
+        return None
+    declarators, fun_node = res
+    if declarator_node.type != "function_declarator":
+        declarators.append(declarator_node.type)
+    return declarators, fun_node
 
 
 def contains_direct_return(body: Node):
@@ -292,10 +286,7 @@ class SymbolParser:
         symbol_kind: SymbolKind,
         body: Optional[Block] = None,
     ) -> Symbol:
-        if isinstance(id, str):
-            name: str = id
-        else:
-            name = id.text.decode()
+        name = id if isinstance(id, str) else id.text.decode()
         if body is None:
             body = []
         return Symbol(
@@ -314,17 +305,14 @@ class SymbolParser:
         )
 
     def mk_dummy_symbol(self, id: Node | str, parents: List[Node]) -> Symbol:
-        if isinstance(id, str):
-            name: str = id
-        else:
-            name = id.text.decode()
+        name = id if isinstance(id, str) else id.text.decode()
         return self.mk_symbol_decl(id=name, parents=parents, symbol_kind=ValueKind())
 
     def mk_dummy_metasymbol(self, counter: Counter, name: str) -> Symbol:
         count = counter.next(name)
         id = f"{name}${count}"
         dummy = self.mk_dummy_symbol(id=id, parents=[self.node])
-        self.scope = self.scope + f"{id}."
+        self.scope = f"{self.scope}{id}."
         return dummy
 
     def update_dummy_symbol(self, symbol: Symbol, symbol_kind: SymbolKind) -> None:
@@ -364,8 +352,7 @@ class SymbolParser:
             if node_before is not None and node_before.type == "=":
                 # consider "=" part of the body
                 self.body_sub = (node_before.start_byte, body_node.end_byte)
-                n2 = node_before.prev_sibling
-                if n2:
+                if n2 := node_before.prev_sibling:
                     n3 = n2.prev_sibling
                     if n3 and n3.type == ":":
                         type = parse_type(self.language, n2)

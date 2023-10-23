@@ -66,10 +66,7 @@ class Item:
     symbol: Optional["Symbol"] = None
 
     def __str__(self):
-        if self.symbol:
-            return self.symbol.name
-        else:
-            return f"'{self.type}'"
+        return self.symbol.name if self.symbol else f"'{self.type}'"
 
     __repr__ = __str__
 
@@ -176,9 +173,9 @@ class Parameter:
         if self.optional:
             res += "?"
         if self.type is not None:
-            res = res + f":{self.type}"
+            res = f"{res}:{self.type}"
         if self.default_value is not None:
-            res = res + f"={self.default_value}"
+            res = f"{res}={self.default_value}"
         return res
 
     __repr__ = __str__
@@ -372,10 +369,7 @@ class TypeDefinitionKind(SymbolKind):
             lines.append(f"   type: {self.type}")
 
     def __str__(self) -> str:
-        if self.type is None:
-            return f"{self.name()}"
-        else:
-            return f"{self.type}"
+        return f"{self.name()}" if self.type is None else f"{self.type}"
 
 
 @dataclass
@@ -436,25 +430,20 @@ class Symbol:
     def get_substring_without_body(self) -> bytes:
         if self.body_sub is None:
             return self.get_substring()
-        else:
-            start, _end = self.substring
-            body_start, _body_end = self.body_sub
-            return self.code.bytes[start:body_start]
+        start, _end = self.substring
+        body_start, _body_end = self.body_sub
+        return self.code.bytes[start:body_start]
 
     @property
     def docstring(self) -> Optional[str]:
         if self.docstring_sub is None:
             return None
-        else:
-            start, end = self.docstring_sub
-            return self.code.bytes[start:end].decode()
+        start, end = self.docstring_sub
+        return self.code.bytes[start:end].decode()
 
     def dump(self, lines: List[str]) -> None:
         signature = self.symbol_kind.signature()
-        if signature is not None:
-            id = self.name + signature
-        else:
-            id = self.name
+        id = self.name + signature if signature is not None else self.name
         lines.append(
             f"{self.kind()}: {id}\n   language: {self.language}\n   range: {self.range}\n   substring: {self.substring}"
         )
@@ -487,17 +476,24 @@ class File:
         return self._symbol_table.get(qid)
 
     def search_symbol(self, name: Union[str, Callable[[str], bool]]) -> List[Symbol]:
-        if callable(name):
-            name_filter = name
-            return [symbol for symbol in self._symbol_table.values() if name_filter(symbol.name)]
-        else:
+        if not callable(name):
             return [symbol for symbol in self._symbol_table.values() if symbol.name == name]
+        name_filter = name
+        return [
+            symbol
+            for symbol in self._symbol_table.values()
+            if name_filter(symbol.name_filter)
+        ]
 
     def search_module_import(self, module_name: str) -> Optional[Import]:
-        for import_ in self._imports:
-            if import_.module_name == module_name:
-                return import_
-        return None
+        return next(
+            (
+                import_
+                for import_ in self._imports
+                if import_.module_name == module_name
+            ),
+            None,
+        )
 
     def add_symbol(self, symbol: Symbol) -> None:
         if symbol.parent:
@@ -586,14 +582,17 @@ class Project:
         self._files.append(file)
 
     def lookup_file(self, path: str) -> Optional[File]:
-        for file in self._files:
-            if os.path.join(self.root_path, file.path) == path:
-                return file
-        return None
+        return next(
+            (
+                file
+                for file in self._files
+                if os.path.join(self.root_path, file.path) == path
+            ),
+            None,
+        )
 
     def lookup_reference(self, reference: Reference) -> Optional[ResolvedReference]:
-        file = self.lookup_file(reference.file_path)
-        if file:
+        if file := self.lookup_file(reference.file_path):
             if reference.qualified_id is None:
                 symbol = None
             else:

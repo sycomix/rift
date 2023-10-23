@@ -42,9 +42,7 @@ class StringPrompt(Prompt):
         self.string = string
 
     def fit(self, max_size: int) -> Optional[Tuple[str, int]]:
-        if self.size <= max_size:
-            return self.string, self.size
-        return None
+        return (self.string, self.size) if self.size <= max_size else None
 
     @property
     def min_size(self) -> int:
@@ -63,23 +61,23 @@ class SplitStringPrompt(Prompt):
         self.min_size_ = min_size if min_size else token_length(self.separator)
 
     def fit(self, max_size: int) -> Optional[Tuple[str, int]]:
-        if self.min_size <= max_size:
-            separator_size = token_length(self.separator)
-            remaining_size = max_size - separator_size
-            tokens_lhs = ENCODER.encode(self.string1)
-            tokens_rhs = ENCODER.encode(self.string2)
-            size_lhs = remaining_size // 2
-            size_lhs = max(size_lhs, remaining_size - len(tokens_rhs))
-            # cut tokens_lhs to the rightmost size_lhs tokens
-            tokens_lhs = tokens_lhs[-size_lhs:] if size_lhs > 0 else []
-            size_rhs = remaining_size - len(tokens_lhs)
-            # cut tokens_rhs to the leftmost size_rhs tokens
-            tokens_rhs = tokens_rhs[:size_rhs] if size_rhs > 0 else []
-            combined_string = (
-                ENCODER.decode(tokens_lhs) + self.separator + ENCODER.decode(tokens_rhs)
-            )
-            return combined_string, len(tokens_lhs) + separator_size + len(tokens_rhs)
-        return None
+        if self.min_size > max_size:
+            return None
+        separator_size = token_length(self.separator)
+        remaining_size = max_size - separator_size
+        tokens_lhs = ENCODER.encode(self.string1)
+        tokens_rhs = ENCODER.encode(self.string2)
+        size_lhs = remaining_size // 2
+        size_lhs = max(size_lhs, remaining_size - len(tokens_rhs))
+        # cut tokens_lhs to the rightmost size_lhs tokens
+        tokens_lhs = tokens_lhs[-size_lhs:] if size_lhs > 0 else []
+        size_rhs = remaining_size - len(tokens_lhs)
+        # cut tokens_rhs to the leftmost size_rhs tokens
+        tokens_rhs = tokens_rhs[:size_rhs] if size_rhs > 0 else []
+        combined_string = (
+            ENCODER.decode(tokens_lhs) + self.separator + ENCODER.decode(tokens_rhs)
+        )
+        return combined_string, len(tokens_lhs) + separator_size + len(tokens_rhs)
 
     @property
     def min_size(self) -> int:
@@ -126,16 +124,14 @@ class EitherPrompt(Prompt):
 
     def fit(self, max_size: int) -> Optional[Tuple[str, int]]:
         first = self.prompt1.fit(max_size)
-        if first is not None:
-            return first
-        return self.prompt2.fit(max_size)
+        return first if first is not None else self.prompt2.fit(max_size)
 
     @property
     def min_size(self) -> int:
         return min(self.prompt1.min_size, self.prompt2.min_size)
 
     def __str__(self) -> str:
-        return "(" + str(self.prompt1) + " | " + str(self.prompt2) + ")"
+        return f"({str(self.prompt1)} | {str(self.prompt2)})"
 
 
 def generate_list_prompts(
@@ -153,19 +149,18 @@ def generate_list_prompts(
     Returns:
         List[Prompt]: The list of generated prompts.
     """
-    prompts = []
     prompt = prompt_func(elements)
     if prompt.fit(max_size) is not None:
         return [prompt]
-    else:
-        middle = len(elements) // 2
-        left_elements = elements[:middle]
-        right_elements = elements[middle:]
-        left_prompts = generate_list_prompts(prompt_func, left_elements, max_size)
-        right_prompts = generate_list_prompts(prompt_func, right_elements, max_size)
-        prompts.extend(left_prompts)
-        prompts.extend(right_prompts)
-        return prompts
+    middle = len(elements) // 2
+    left_elements = elements[:middle]
+    right_elements = elements[middle:]
+    left_prompts = generate_list_prompts(prompt_func, left_elements, max_size)
+    right_prompts = generate_list_prompts(prompt_func, right_elements, max_size)
+    prompts = []
+    prompts.extend(left_prompts)
+    prompts.extend(right_prompts)
+    return prompts
 
 
 # every message follows <im_start>{role/name}\n{content}<im_end>\n

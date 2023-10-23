@@ -87,12 +87,10 @@ async def _main(
             await asyncio.sleep(0.1)
             dbs.logs[step.__name__] = json.dumps(messages)
             items = list(dbs.workspace.in_memory_dict.items())
-            if len([x for x in items if x[0] not in SEEN]) > 0:
+            if [x for x in items if x[0] not in SEEN]:
                 await UPDATES_QUEUE.put([x for x in items if x[0] not in SEEN])
                 for x in items:
-                    if x[0] in SEEN:
-                        pass
-                    else:
+                    if x[0] not in SEEN:
                         SEEN.add(x[0])
             await asyncio.sleep(0.5)
 
@@ -142,7 +140,7 @@ class GPTEngineerAgent(agent.Agent):
             for field in fields(obj):
                 yield field.name, getattr(obj, field.name)
 
-        params_dict = {k: v for k, v in iter_fields(self.run_params)}
+        params_dict = dict(iter_fields(self.run_params))
 
         main_t = asyncio.create_task(_main(**params_dict))
 

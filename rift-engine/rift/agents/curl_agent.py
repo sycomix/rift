@@ -74,12 +74,8 @@ class CurlAgent(Agent):
             messages=[openai.Message.assistant("Please enter a URL")],
         )
 
-        # Create the CurlAgent object
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-
-        # Return the CurlAgent object
-        return obj

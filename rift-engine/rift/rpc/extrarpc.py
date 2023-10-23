@@ -56,7 +56,7 @@ class RequestFutureWithProgress(Generic[Q, R]):
     def _put(self, progress_item: Q):
         if self._r.done():
             logger.warning(
-                f"tried to put a progress item after request was done, this item will be ignored"
+                "tried to put a progress item after request was done, this item will be ignored"
             )
             return
         for cb in self._callbacks:

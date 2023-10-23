@@ -21,20 +21,15 @@ def as_optional(T: Type) -> Optional[Type]:
     if get_origin(T) is Union:
         args = get_args(T)
         if type(None) in args:
-            ts = tuple(a for a in args if a is not type(None))
-            if len(ts) == 0:
-                return None
-            if len(ts) == 1:
-                return ts[0]
+            if ts := tuple(a for a in args if a is not type(None)):
+                return ts[0] if len(ts) == 1 else Union[ts]
             else:
-                return Union[ts]  # type: ignore
+                return None
     return None
 
 
 def as_literal(T: Type) -> Optional[tuple[str, ...]]:
-    if get_origin(T) is Literal:
-        return get_args(T)
-    return None
+    return get_args(T) if get_origin(T) is Literal else None
 
 
 def as_list(T: Type) -> Optional[Type]:
@@ -44,9 +39,7 @@ def as_list(T: Type) -> Optional[Type]:
     o = get_origin(T)
     if o is None:
         return None
-    if issubclass(o, list):
-        return get_args(T)[0]
-    return None
+    return get_args(T)[0] if issubclass(o, list) else None
 
 
 def as_newtype(T: Type) -> Optional[Type]:
@@ -59,9 +52,7 @@ def as_set(T: Type) -> Optional[Type]:
     o = get_origin(T)
     if o is None:
         return None
-    if issubclass(o, set):
-        return get_args(T)[0]
-    return None
+    return get_args(T)[0] if issubclass(o, set) else None
 
 
 def is_subtype(T1: Type, T2: Type) -> bool:

@@ -78,7 +78,7 @@ class CodeCapabilitiesServer:
             logger.info("[CodeCapabilitiesServer] listening...")
             await server.listen_forever()
         except Exception as e:
-            logger.error("caught: " + str(e))
+            logger.error(f"caught: {str(e)}")
             logger.info(
                 "connection closed, but Rift is still running and accepting new connections."
             )
@@ -118,10 +118,11 @@ class CodeCapabilitiesServer:
         If lsp_port = 'stdio', then the LSP listens on stdin and stdout.
         There is also a web server at 7787 that the webview can connect to.
         """
-        lsp_task = asyncio.create_task(
-            self.run_lsp_stdio() if self.lsp_port == "stdio" else self.run_lsp_tcp()
+        return asyncio.create_task(
+            self.run_lsp_stdio()
+            if self.lsp_port == "stdio"
+            else self.run_lsp_tcp()
         )
-        return lsp_task
 
     async def run_forever(self):
         """Runs the language server.
@@ -169,8 +170,7 @@ def create_metaserver(
     rift_splash()
 
     logger.info(f"starting Rift server on {host}:{port}")
-    metaserver = CodeCapabilitiesServer(lsp_host=host, lsp_port=port)
-    return metaserver
+    return CodeCapabilitiesServer(lsp_host=host, lsp_port=port)
 
 
 def main(
@@ -183,8 +183,7 @@ def main(
     if socket != port:
         port = int(socket)
         logger.info(f"setting port={int(socket)}")
-    metaserver = create_metaserver(host, port, version, debug)
-    if metaserver:
+    if metaserver := create_metaserver(host, port, version, debug):
         asyncio.run(metaserver.run_forever(), debug=debug)
 
 

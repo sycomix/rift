@@ -105,12 +105,8 @@ class SampleAgent(Agent):
             messages=[openai.Message.assistant("test")],
         )
 
-        # Create the SampleAgent object
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-
-        # Return the SampleAgent object
-        return obj

@@ -44,7 +44,7 @@ def _PrintResult(component_trace, verbose=False, serialize=None):
         result = serialize(result)
 
     if fire.value_types.HasCustomStr(result):
-        print(str(result))
+        print(result)
         return
 
     if isinstance(result, (list, set, frozenset, types.GeneratorType)):

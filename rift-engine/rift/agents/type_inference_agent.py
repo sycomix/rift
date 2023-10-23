@@ -67,11 +67,9 @@ Prompt = List[Message]
 class MissingTypePrompt:
     @staticmethod
     def mk_user_msg(missing_types: List[MissingType], code: IR.Code) -> str:
-        missing_str = ""
-        n = 0
-        for mt in missing_types:
-            n += 1
-            missing_str += f"{n}. {mt}\n"
+        missing_str = "".join(
+            f"{n}. {mt}\n" for n, mt in enumerate(missing_types, start=1)
+        )
         return dedent(
             f"""
         Add missing types for the following functions:
@@ -95,19 +93,6 @@ class MissingTypePrompt:
     @staticmethod
     def create_prompt_for_file(language: IR.Language, missing_types: List[MissingType]) -> Prompt:
         code = MissingTypePrompt.code_for_missing_types(missing_types)
-        example_py = """
-            ```python
-                def foo(a: t1, b : t2) -> t3
-                    ...
-            ```
-        """
-        example_ts = """
-            ```typescript
-                function foo(a: t1, b : t2): t3 {
-                    ...
-                }
-            ```
-        """
         example_ocaml = """
             ```ocaml
                 let foo (a: t1) (b : t2) : t3 =
@@ -115,10 +100,23 @@ class MissingTypePrompt:
             ```
         """
         if language in ["javascript", "typescript", "tsx"]:
+            example_ts = """
+            ```typescript
+                function foo(a: t1, b : t2): t3 {
+                    ...
+                }
+            ```
+        """
             example = example_ts
         elif language == "ocaml":
             example = example_ocaml
         else:
+            example_py = """
+            ```python
+                def foo(a: t1, b : t2) -> t3
+                    ...
+            ```
+        """
             example = example_py
 
         system_msg = dedent(
@@ -154,7 +152,7 @@ class FileProcess:
 
 
 def count_missing(missing_types: List[MissingType]) -> int:
-    return sum([int(mt) for mt in missing_types])
+    return sum(int(mt) for mt in missing_types)
 
 
 def get_num_missing_in_code(code: IR.Code, language: IR.Language) -> int:
@@ -270,15 +268,15 @@ class TypeInferenceAgent(agent.ThirdPartyAgent):
         group: List[MissingType] = []
         for mt in missing_types:
             group.append(mt)
-            do_split = len(group) == Config.max_size_group_missing_types
-
-            # also split if a function with the same name is in the current group (e.g. from another class)
-            for mt2 in group:
-                if mt.function_declaration.name == mt2.function_declaration.name:
-                    do_split = True
-                    break
-
-            if do_split:
+            if do_split := next(
+                (
+                    True
+                    for mt2 in group
+                    if mt.function_declaration.name
+                    == mt2.function_declaration.name
+                ),
+                len(group) == Config.max_size_group_missing_types,
+            ):
                 groups_of_missing_types.append(group)
                 group = []
         if len(group) > 0:

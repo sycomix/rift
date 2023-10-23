@@ -97,12 +97,11 @@ class SmolAgent(ThirdPartyAgent):
             _done=False,
             messages=[openai.Message.assistant("What do you want to build?")],
         )
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-        return obj
 
     async def _run_chat_thread(self, response_stream: str) -> None:
         before, after = response_stream.split_once("感")

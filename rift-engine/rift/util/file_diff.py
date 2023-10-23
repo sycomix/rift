@@ -40,12 +40,11 @@ def get_file_change(path: str, new_content: str) -> FileChange:
     A FileChange instance that represents the changes to be made in the source file.
     """
     uri = TextDocumentIdentifier(uri=pathname2url(path), version=0)
-    if os.path.isfile(path):
-        with open(path, "r") as f:
-            old_content = f.read()
-            return FileChange(uri=uri, old_content=old_content, new_content=new_content)
-    else:
+    if not os.path.isfile(path):
         return FileChange(uri=uri, old_content="", new_content=new_content, is_new_file=True)
+    with open(path, "r") as f:
+        old_content = f.read()
+        return FileChange(uri=uri, old_content=old_content, new_content=new_content)
 
 
 def edits_from_file_change(
@@ -60,16 +59,7 @@ def edits_from_file_change(
     edits = []  # list of TextEdit objects
     annotation_label = file_change.annotation_label or "rift"
 
-    new_text = ""
-
-    for op, text in diff:
-        if op == -1:  # remove
-            pass
-        elif op == 0:  # keep
-            new_text += text
-        elif op == 1:  # add
-            new_text += text
-
+    new_text = "".join(text for op, text in diff if op in [0, 1])
     lines = file_change.old_content.split("\n")
     edits = [
         TextEdit(
@@ -132,8 +122,8 @@ def edits_from_file_changes(
 if __name__ == "__main__":
     file1 = "tests/diff/file1.txt"
     file2 = "tests/diff/file2.txt"
-    with open(file1, "r") as f1, open(file2, "r") as f2:
-        uri = TextDocumentIdentifier(uri="file://" + file1, version=0)
+    with (open(file1, "r") as f1, open(file2, "r") as f2):
+        uri = TextDocumentIdentifier(uri=f"file://{file1}", version=0)
         file_change = get_file_change(path=file1, new_content=f2.read())
         workspace_edit = edits_from_file_change(file_change=file_change)
         print(f"\nworkspace_edit: {workspace_edit}\n")

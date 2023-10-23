@@ -82,7 +82,7 @@ def message_size(msg: Message):
 
 
 def messages_size(messages: List[Message]) -> int:
-    return sum([len(msg.content) for msg in messages])
+    return sum(len(msg.content) for msg in messages)
 
 
 def split_sizes(size1: int, size2: int, max_size: int) -> tuple[int, int]:
@@ -92,7 +92,7 @@ def split_sizes(size1: int, size2: int, max_size: int) -> tuple[int, int]:
     """
     if size1 + size2 <= max_size:
         return size1, size2
-    share = int(max_size / 2)
+    share = max_size // 2
     size1_bound = min(size1, share)
     size2_bound = min(size2, share)
     if size1 > share:
@@ -158,8 +158,7 @@ def calc_max_system_message_size(
 def format_visible_files(documents: Optional[List[lsp.Document]] = None) -> str:
     if documents is None:
         return ""
-    message = ""
-    message += "Visible files:\n"
+    message = "" + "Visible files:\n"
     for doc in documents:
         message += f"{doc.uri}```\n{doc.document.text}\n```\n"
     return message
@@ -241,7 +240,7 @@ def create_system_message_chat_truncated(
     # logging.getLogger().info(f"{max_size=}")
     hardcoded_message = create_system_message_chat("", "", "")
     hardcoded_message_size = message_size(hardcoded_message)
-    max_size = max_size - hardcoded_message_size
+    max_size -= hardcoded_message_size
 
     # if document_list:
     #     # truncate the main document as necessary
@@ -432,15 +431,13 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
                 if line_ == b"\n":
                     continue
                 line = line_.decode("utf-8")  # [todo] where to get encoding from?
-                if line.startswith("data:"):
-                    line = line.split("data:")[1]
-                    line = line.strip()
-                    if line == "[DONE]":
-                        break
-                    data = stream_data_type.parse_raw(line)
-                    yield data
-                else:
+                if not line.startswith("data:"):
                     raise ValueError(f"unrecognised stream line: {line}")
+                line = line.split("data:")[1]
+                line = line.strip()
+                if line == "[DONE]":
+                    break
+                yield stream_data_type.parse_raw(line)
 
     async def _post_endpoint(
         self,
@@ -463,8 +460,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
                 await self.handle_error(resp)
             assert resp.content_type == "application/json"
             j = await resp.json()
-        r = output_type.parse_obj(j)  # type: ignore
-        return r  # type: ignore
+        return output_type.parse_obj(j)
 
     @overload
     def chat_completions(
@@ -575,7 +571,7 @@ class OpenAIClient(BaseSettings, AbstractCodeCompletionProvider, AbstractChatCom
     ) -> EditCodeResult:
         # logger.info(f"[edit_code] entered {latest_region=}")
         if goal is None:
-            goal = f"""
+            goal = """
             Generate code to replace the given `region`. Write a partial code snippet without imports if needed.
             """
 

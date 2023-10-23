@@ -64,8 +64,7 @@ def generate_typing_types_set():
     # I/O Related Types
     io_related_types = {"IO", "BinaryIO", "TextIO"}
 
-    # Combine all sets into a single set
-    all_types = (
+    return (
         fundamental_building_blocks
         | generic_variants_builtin
         | generic_variants_container_abcs
@@ -73,8 +72,6 @@ def generate_typing_types_set():
         | convenience_definitions
         | io_related_types
     )
-
-    return all_types
 
 
 typing_set = generate_typing_types_set()

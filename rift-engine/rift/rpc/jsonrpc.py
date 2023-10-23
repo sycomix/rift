@@ -211,10 +211,7 @@ class Dispatcher:
         fn = self.methods[method]
         sig = inspect.signature(fn)
         a = sig.return_annotation
-        if a is inspect.Signature.empty:
-            return Any
-        else:
-            return a
+        return Any if a is inspect.Signature.empty else a
 
     def register(self, name=None):
         def core(fn):
@@ -552,7 +549,7 @@ class RpcServer:
                     )
                     raise e
         finally:
-            logger.info(f"exiting serve_forever loop")
+            logger.info("exiting serve_forever loop")
             (_, e, _) = sys.exc_info()  # sys.exception() is 3.11 only
             if e is None:
                 e = ConnectionError(f"{self} shutdown")
@@ -580,11 +577,10 @@ class RpcServer:
             fut = self.my_requests.pop(res.id)
             if fut.done():
                 logger.error(f"received response for already completed request: {res} {fut}")
+            elif res.error is None:
+                fut.set_result(res.result)
             else:
-                if res.error is not None:
-                    fut.set_exception(res.error)
-                else:
-                    fut.set_result(res.result)
+                fut.set_exception(res.error)
         else:
             # message is a Request.
             req = ofdict(Request, message)
@@ -640,11 +636,10 @@ class RpcServer:
         else:
             if not req.is_notification:
                 await self._send(Response(id=req.id, result=result))
-            else:
-                if result is not None:
-                    logger.warning(
-                        f"notification handler {req.method} returned a value, this will be ignored"
-                    )
+            elif result is not None:
+                logger.warning(
+                    f"notification handler {req.method} returned a value, this will be ignored"
+                )
 
     async def _on_request_core(self, req: Request):
         """Inner part of self._on_request, without error handling."""
@@ -663,16 +658,18 @@ class RpcServer:
                 raise internal_error("invalid server state")
         if self.status == RpcServerStatus.shutdown:
             if req.method == "shutdown":
-                if "shutdown" in self.dispatcher:
-                    return await self.dispatcher.dispatch("shutdown", None)
-                else:
-                    return None
-            raise invalid_request("server has shut down")
+                return (
+                    await self.dispatcher.dispatch("shutdown", None)
+                    if "shutdown" in self.dispatcher
+                    else None
+                )
+            else:
+                raise invalid_request("server has shut down")
 
         if req.method == "$/cancelRequest":
             if not req.is_notification:
                 raise invalid_request("cancel request must be a notification")
-            if not isinstance(req.params, dict) or not "id" in req.params:
+            if not isinstance(req.params, dict) or "id" not in req.params:
                 raise invalid_params('params must be a dict with "id" key')
             id = req.params["id"]
             t = self.their_requests.get(id, None)
@@ -691,5 +688,4 @@ class RpcServer:
             message = f"{req.method} {type(e).__name__} failed to decode params to {T}: {e}"
             logger.exception(message)
             raise invalid_params(message)
-        result = await self.dispatcher.dispatch(req.method, params)
-        return result
+        return await self.dispatcher.dispatch(req.method, params)

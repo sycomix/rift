@@ -97,10 +97,7 @@ class AgentTask:
         """
         if self._done:
             return True
-        if self._task:
-            return self._task.done()
-        else:
-            return False
+        return self._task.done() if self._task else False
 
     @property
     def cancelled(self) -> bool:

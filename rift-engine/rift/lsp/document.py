@@ -137,7 +137,7 @@ class Range:
     @classmethod
     def union(cls, items: Iterable["Range"]):
         items = list(items)
-        if len(items) == 0:
+        if not items:
             raise ValueError("cannot union empty list of ranges")
         start = min(r.start for r in items)
         end = max(r.end for r in items)
@@ -146,16 +146,14 @@ class Range:
     @classmethod
     def intersection(cls, items: Iterable["Range"]):
         items = list(items)
-        if len(items) == 0:
+        if not items:
             # mathematically, the intersection of an empty set of
             # ranges is the whole number line.
             # but let's not do that.
             raise ValueError("cannot intersect empty list of ranges")
         start = max(r.start for r in items)
         end = min(r.end for r in items)
-        if start > end:
-            return None
-        return cls(start, end)
+        return None if start > end else cls(start, end)
 
     def __add__(self, offset: int):
         assert isinstance(offset, int)
@@ -197,11 +195,9 @@ class TextDocumentContentChangeEvent:
     def apply(self, text: str) -> str:
         if self.range is None:
             return self.text
-        else:
-            with setdoc(text):
-                start, end = self.range.to_offsets()
-                text1 = text[:start] + self.text + text[end:]
-                return text1
+        with setdoc(text):
+            start, end = self.range.to_offsets()
+            return text[:start] + self.text + text[end:]
 
     def map_pos(self, pos: "Position"):
         if self.range is None:
@@ -319,13 +315,12 @@ class DocumentContext:
             char = len(subline) * 2
 
         assert char % word_length == 0
-        char = char // 2
+        char //= 2
         return Position(line=line_idx, character=char)
 
     def add_position(self, position: Position, delta_offset: int) -> Position:
         offset = self.position_to_offset(position)
-        result = self.offset_to_position(offset + delta_offset)
-        return result
+        return self.offset_to_position(offset + delta_offset)
 
     def range_to_offsets(self, range: Range) -> tuple[int, int]:
         return (

@@ -72,12 +72,11 @@ class Mentat(agent.ThirdPartyAgent):
             params=params,
             messages=[],
         )
-        obj = cls(
+        return cls(
             state=state,
             agent_id=params.agent_id,
             server=server,
         )
-        return obj
 
     async def apply_file_changes(self, updates) -> lsp.ApplyWorkspaceEditResponse:
         return await self.server.apply_workspace_edit(
